@@ -1,4 +1,4 @@
-import { debounce, throttle } from '../utils';
+import { debounce, throttle } from './utils';
 
 const CACLTYPE = {
   INIT: 'INIT',
@@ -70,10 +70,10 @@ function Virtual(options) {
   this.offset = 0;
   this.calcType = CACLTYPE.INIT;
   this.calcSize = { average: 0, total: 0, fixed: 0, header: 0 };
+  this.scrollEl = this._getScrollElement(options.scroller);
   this.direction = '';
   this.useWindowScroll = null;
 
-  this._updateScrollElement();
   this._updateOnScrollFunction();
   this.addScrollEventListener();
   this._checkIfUpdate(0, options.keeps - 1);
@@ -153,7 +153,7 @@ Virtual.prototype = {
     } else if (key === 'scroller') {
       oldValue?.removeEventListener('scroll', this._onScroll);
 
-      this._updateScrollElement();
+      this.scrollEl = this._getScrollElement(value);
       this.addScrollEventListener();
     }
   },
@@ -211,10 +211,6 @@ Virtual.prototype = {
     }
 
     this._onScroll = this._onScroll.bind(this);
-  },
-
-  _updateScrollElement() {
-    this.scrollEl = this._getScrollElement(this.options.scroller);
   },
 
   _handleScroll() {

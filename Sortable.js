@@ -1,5 +1,5 @@
 import Dnd from 'sortable-dnd';
-import { getDataKey } from '../utils';
+import { getDataKey } from './utils';
 
 export const attributes = [
   'delay',
