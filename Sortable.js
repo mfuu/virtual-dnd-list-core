@@ -1,7 +1,7 @@
 import Dnd from 'sortable-dnd';
 import { getDataKey } from './utils';
 
-export const attributes = [
+export const SortableAttrs = [
   'delay',
   'group',
   'handle',
@@ -17,30 +17,15 @@ export const attributes = [
   'delayOnTouchOnly',
 ];
 
-/**
- * 
- * @param {HTMLElement} el sortable container
- * @param {Object} options sortable options
- * 
- * @example
- * options = {
- *  list: [], // list to drag and drop
- *  dataKey: '', // list item key
- *  onDrag: () => {},
- *  onDrop: () => {},
- *  onAdd: () => {},
- *  onRemove: () => {},
- * }
- */
 function Sortable(el, options) {
   this.el = el;
   this.options = options;
-
-  this.list = [...options.list];
+  this.list = [];
   this.store = {};
   this.reRendered = false;
+  this.attrs = SortableAttrs;
 
-  this._init();
+  this.init();
 }
 
 Sortable.prototype = {
@@ -59,27 +44,29 @@ Sortable.prototype = {
     }
   },
 
-  _init() {
+  // ========================================= Properties =========================================
+  init() {
     let props = {};
-    for (let i = 0; i < attributes.length; i++) {
-      let key = attributes[i]
+    for (let i = 0; i < SortableAttrs.length; i++) {
+      let key = SortableAttrs[i];
       props[key] = this.options[key];
     }
 
     this.sortable = new Dnd(this.el, {
       ...props,
       swapOnDrop: (params) => params.from === params.to,
-      onDrag: (params) => this._onDrag(params),
-      onAdd: (params) => this._onAdd(params),
-      onRemove: (params) => this._onRemove(params),
-      onChange: (params) => this._onChange(params),
-      onDrop: (params) => this._onDrop(params),
+      onDrag: (params) => this.onDrag(params),
+      onAdd: (params) => this.onAdd(params),
+      onRemove: (params) => this.onRemove(params),
+      onChange: (params) => this.onChange(params),
+      onDrop: (params) => this.onDrop(params),
     });
+    this.list = [...this.options.list];
   },
 
-  _onDrag(params) {
+  onDrag(params) {
     const key = params.node.dataset.key;
-    const index = this._getIndex(this.list, key);
+    const index = this.getIndex(this.list, key);
     const item = this.list[index];
 
     // store the drag item
@@ -92,12 +79,12 @@ Sortable.prototype = {
     };
     this.sortable.option('store', this.store);
 
-    this._dispatchEvent('onDrag', { item, key, index });
+    this.dispatchEvent('onDrag', { item, key, index });
   },
 
-  _onRemove(params) {
+  onRemove(params) {
     const key = params.node.dataset.key;
-    const index = this._getIndex(this.list, key);
+    const index = this.getIndex(this.list, key);
     const item = this.list[index];
 
     this.list.splice(index, 1);
@@ -105,16 +92,18 @@ Sortable.prototype = {
     Object.assign(this.store, { key, item });
     this.sortable.option('store', this.store);
 
-    this._dispatchEvent('onRemove', { item, key, index });
+    this.dispatchEvent('onRemove', { item, key, index });
   },
 
-  _onAdd(params) {
+  onAdd(params) {
     const { from, target, relative } = params;
     const { key, item } = Dnd.get(from).option('store');
 
-    let index = this._getIndex(this.list, target.dataset.key);
+    let index = this.getIndex(this.list, target.dataset.key);
 
-    if (relative === -1) {
+    if (relative === 0) {
+      index = this.list.length;
+    } else if (relative === -1) {
       index += 1;
     }
 
@@ -128,10 +117,10 @@ Sortable.prototype = {
     });
     this.sortable.option('store', this.store);
 
-    this._dispatchEvent('onAdd', { item, key, index });
+    this.dispatchEvent('onAdd', { item, key, index });
   },
 
-  _onChange(params) {
+  onChange(params) {
     const store = Dnd.get(params.from).option('store');
 
     if (params.revertDrag) {
@@ -146,10 +135,10 @@ Sortable.prototype = {
 
     const { node, target, relative, backToOrigin } = params;
 
-    const fromIndex = this._getIndex(this.list, node.dataset.key);
+    const fromIndex = this.getIndex(this.list, node.dataset.key);
     const fromItem = this.list[fromIndex];
 
-    let toIndex = this._getIndex(this.list, target.dataset.key);
+    let toIndex = this.getIndex(this.list, target.dataset.key);
 
     if (backToOrigin) {
       if (relative === 1 && store.from.index < toIndex) {
@@ -175,11 +164,11 @@ Sortable.prototype = {
     });
   },
 
-  _onDrop(params) {
-    const { from, to } = this._getStore(params);
+  onDrop(params) {
+    const { from, to } = this.getStore(params);
     const changed = params.from !== params.to || from.origin.index !== to.to.index;
 
-    this._dispatchEvent('onDrop', {
+    this.dispatchEvent('onDrop', {
       changed,
       list: this.list,
       item: from.item,
@@ -198,7 +187,7 @@ Sortable.prototype = {
     this.reRendered = false;
   },
 
-  _getIndex(list, key) {
+  getIndex(list, key) {
     for (let i = 0; i < list.length; i++) {
       if (getDataKey(list[i], this.options.dataKey) == key) {
         return i;
@@ -207,17 +196,18 @@ Sortable.prototype = {
     return -1;
   },
 
-  _getStore(params) {
+  getStore(params) {
     return {
       from: Dnd.get(params.from).option('store'),
       to: Dnd.get(params.to).option('store'),
     };
   },
 
-  _dispatchEvent(name, params) {
+  dispatchEvent(name, params) {
     const cb = this.options[name];
     if (cb) cb(params);
-  }
+  },
 };
 
+export { Sortable };
 export default Sortable;

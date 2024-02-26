@@ -1,4 +1,14 @@
+import { utils } from 'sortable-dnd';
 import { debounce, throttle } from './utils';
+
+export const VirtualAttrs = [
+  'size',
+  'keeps',
+  'scroller',
+  'direction',
+  'debounceTime',
+  'throttleTime',
+];
 
 const CACLTYPE = {
   INIT: 'INIT',
@@ -17,9 +27,14 @@ const DIRECTION = {
   VERTICAL: 'vertical',
 };
 
-const scrollType = {
+const scrollDir = {
   [DIRECTION.VERTICAL]: 'scrollTop',
   [DIRECTION.HORIZONTAL]: 'scrollLeft',
+};
+
+const offsetDir = {
+  [DIRECTION.VERTICAL]: 'offsetTop',
+  [DIRECTION.HORIZONTAL]: 'offsetLeft',
 };
 
 const scrollSize = {
@@ -31,20 +46,6 @@ const offsetSize = {
   [DIRECTION.VERTICAL]: 'offsetHeight',
   [DIRECTION.HORIZONTAL]: 'offsetWidth',
 };
-
-const offsetType = {
-  [DIRECTION.VERTICAL]: 'offsetTop',
-  [DIRECTION.HORIZONTAL]: 'offsetLeft',
-};
-
-export const attributes = [
-  'size',
-  'keeps',
-  'scroller',
-  'direction',
-  'debounceTime',
-  'throttleTime',
-];
 
 function Virtual(options) {
   this.options = options;
@@ -70,19 +71,19 @@ function Virtual(options) {
   this.offset = 0;
   this.calcType = CACLTYPE.INIT;
   this.calcSize = { average: 0, total: 0, fixed: 0, header: 0 };
-  this.scrollEl = this._getScrollElement(options.scroller);
+  this.scrollEl = this.getScrollElement(options.scroller);
   this.direction = '';
   this.useWindowScroll = null;
+  this.onScroll = null;
 
-  this._updateOnScrollFunction();
+  this.updateOnScrollFunction();
   this.addScrollEventListener();
-  this._checkIfUpdate(0, options.keeps - 1);
+  this.checkIfUpdate(0, options.keeps - 1);
 }
 
 Virtual.prototype = {
   constructor: Virtual,
 
-  // ========================================= Public Methods =========================================
   isFront() {
     return this.direction === SCROLL_DIRECTION.FRONT;
   },
@@ -96,11 +97,11 @@ Virtual.prototype = {
   },
 
   getSize(key) {
-    return this.sizes.get(key) || this._getItemSize();
+    return this.sizes.get(key) || this.getItemSize();
   },
 
   getOffset() {
-    return this.scrollEl[scrollType[this.options.direction]];
+    return this.scrollEl[scrollDir[this.options.direction]];
   },
 
   getScrollSize() {
@@ -112,14 +113,14 @@ Virtual.prototype = {
   },
 
   scrollToOffset(offset) {
-    this.scrollEl[scrollType[this.options.direction]] = offset;
+    this.scrollEl[scrollDir[this.options.direction]] = offset;
   },
 
   scrollToIndex(index) {
     if (index >= this.options.uniqueKeys.length - 1) {
       this.scrollToBottom();
     } else {
-      const indexOffset = this._getOffsetByIndex(index);
+      const indexOffset = this.getOffsetByIndex(index);
       this.scrollToOffset(indexOffset);
     }
   },
@@ -139,7 +140,7 @@ Virtual.prototype = {
     }, 5);
   },
 
-  updateOptions(key, value) {
+  option(key, value) {
     const oldValue = this.options[key];
 
     this.options[key] = value;
@@ -150,27 +151,27 @@ Virtual.prototype = {
           this.sizes.delete(k);
         }
       });
-    } else if (key === 'scroller') {
-      oldValue?.removeEventListener('scroll', this._onScroll);
-
-      this.scrollEl = this._getScrollElement(value);
+    }
+    if (key === 'scroller') {
+      oldValue && utils.off(oldValue, 'scroll', this.onScroll);
+      this.scrollEl = this.getScrollElement(value);
       this.addScrollEventListener();
     }
   },
 
   updateRange(range) {
     if (range) {
-      this._handleUpdate(range.start, range.end);
+      this.handleUpdate(range.start, range.end);
       return;
     }
 
     let start = this.range.start;
     start = Math.max(start, 0);
 
-    this._handleUpdate(start, this._getEndByStart(start));
+    this.handleUpdate(start, this.getEndByStart(start));
   },
 
-  handleItemSizeChange(key, size) {
+  onItemResized(key, size) {
     this.sizes.set(key, size);
 
     if (this.calcType === CACLTYPE.INIT) {
@@ -187,33 +188,35 @@ Virtual.prototype = {
     }
   },
 
-  handleSlotSizeChange(key, size) {
+  onSlotResized(key, size) {
     this.calcSize[key] = size;
   },
 
   addScrollEventListener() {
-    this.options.scroller?.addEventListener('scroll', this._onScroll, false);
+    if (this.options.scroller) {
+      utils.on(this.options.scroller, 'scroll', this.onScroll);
+    }
   },
 
   removeScrollEventListener() {
-    this.options.scroller?.removeEventListener('scroll', this._onScroll);
+    if (this.options.scroller) {
+      utils.off(this.options.scroller, 'scroll', this.onScroll);
+    }
   },
 
   // ========================================= Properties =========================================
-  _updateOnScrollFunction() {
+  updateOnScrollFunction() {
     const { debounceTime, throttleTime } = this.options;
     if (debounceTime) {
-      this._onScroll = debounce(() => this._handleScroll(), debounceTime);
+      this.onScroll = debounce(() => this.handleScroll(), debounceTime);
     } else if (throttleTime) {
-      this._onScroll = throttle(() => this._handleScroll(), throttleTime);
+      this.onScroll = throttle(() => this.handleScroll(), throttleTime);
     } else {
-      this._onScroll = () => this._handleScroll();
+      this.onScroll = () => this.handleScroll();
     }
-
-    this._onScroll = this._onScroll.bind(this);
   },
 
-  _handleScroll() {
+  handleScroll() {
     const offset = this.getOffset();
     const clientSize = this.getClientSize();
     const scrollSize = this.getScrollSize();
@@ -232,32 +235,32 @@ Virtual.prototype = {
     this.options.onScroll({ top, bottom, offset, direction: this.direction });
 
     if (this.isFront()) {
-      this._handleScrollFront();
+      this.handleScrollFront();
     } else if (this.isBehind()) {
-      this._handleScrollBehind();
+      this.handleScrollBehind();
     }
   },
 
-  _handleScrollFront() {
-    const scrolls = this._getScrollItems();
+  handleScrollFront() {
+    const scrolls = this.getScrollItems();
     if (scrolls > this.range.start) {
       return;
     }
     const start = Math.max(scrolls - this.options.buffer, 0);
-    this._checkIfUpdate(start, this._getEndByStart(start));
+    this.checkIfUpdate(start, this.getEndByStart(start));
   },
 
-  _handleScrollBehind() {
-    const scrolls = this._getScrollItems();
+  handleScrollBehind() {
+    const scrolls = this.getScrollItems();
 
     if (scrolls < this.range.start + this.options.buffer) {
       return;
     }
-    this._checkIfUpdate(scrolls, this._getEndByStart(scrolls));
+    this.checkIfUpdate(scrolls, this.getEndByStart(scrolls));
   },
 
-  _getScrollItems() {
-    const offset = this.offset - this._getScrollStartOffset();
+  getScrollItems() {
+    const offset = this.offset - this.getScrollStartOffset();
 
     if (offset <= 0) {
       return 0;
@@ -274,7 +277,7 @@ Virtual.prototype = {
 
     while (low <= high) {
       middle = low + Math.floor((high - low) / 2);
-      middleOffset = this._getOffsetByIndex(middle);
+      middleOffset = this.getOffsetByIndex(middle);
 
       if (middleOffset === offset) {
         return middle;
@@ -287,76 +290,76 @@ Virtual.prototype = {
     return low > 0 ? --low : 0;
   },
 
-  _checkIfUpdate(start, end) {
+  checkIfUpdate(start, end) {
     const keeps = this.options.keeps;
     const total = this.options.uniqueKeys.length;
 
     if (total <= keeps) {
       start = 0;
-      end = this._getLastIndex();
+      end = this.getLastIndex();
     } else if (end - start < keeps - 1) {
       start = end - keeps + 1;
     }
 
     if (this.range.start !== start) {
-      this._handleUpdate(start, end);
+      this.handleUpdate(start, end);
     }
   },
 
-  _handleUpdate(start, end) {
+  handleUpdate(start, end) {
     this.range.start = start;
     this.range.end = end;
-    this.range.front = this._getFrontOffset();
-    this.range.behind = this._getBehindOffset();
+    this.range.front = this.getFrontOffset();
+    this.range.behind = this.getBehindOffset();
 
     this.options.onUpdate({ ...this.range });
   },
 
-  _getFrontOffset() {
+  getFrontOffset() {
     if (this.isFixed()) {
       return this.calcSize.fixed * this.range.start;
     } else {
-      return this._getOffsetByIndex(this.range.start);
+      return this.getOffsetByIndex(this.range.start);
     }
   },
 
-  _getBehindOffset() {
+  getBehindOffset() {
     const end = this.range.end;
-    const last = this._getLastIndex();
+    const last = this.getLastIndex();
 
     if (this.isFixed()) {
       return (last - end) * this.calcSize.fixed;
     }
 
-    return (last - end) * this._getItemSize();
+    return (last - end) * this.getItemSize();
   },
 
-  _getOffsetByIndex(index) {
+  getOffsetByIndex(index) {
     if (!index) return 0;
 
     let offset = 0;
     for (let i = 0; i < index; i++) {
       const size = this.sizes.get(this.options.uniqueKeys[i]);
-      offset = offset + (typeof size === 'number' ? size : this._getItemSize());
+      offset = offset + (typeof size === 'number' ? size : this.getItemSize());
     }
 
     return offset;
   },
 
-  _getEndByStart(start) {
-    return Math.min(start + this.options.keeps - 1, this._getLastIndex());
+  getEndByStart(start) {
+    return Math.min(start + this.options.keeps - 1, this.getLastIndex());
   },
 
-  _getLastIndex() {
+  getLastIndex() {
     const { uniqueKeys, keeps } = this.options;
     return uniqueKeys.length > 0 ? uniqueKeys.length - 1 : keeps - 1;
   },
 
-  _getItemSize() {
+  getItemSize() {
     return this.isFixed() ? this.calcSize.fixed : this.calcSize.average || this.options.size;
   },
 
-  _getScrollElement: function (scroller) {
+  getScrollElement: function (scroller) {
     if ((scroller instanceof Document && scroller.nodeType === 9) || scroller instanceof Window) {
       this.useWindowScroll = true;
       return document.scrollingElement || document.documentElement || document.body;
@@ -367,12 +370,12 @@ Virtual.prototype = {
     return scroller;
   },
 
-  _getScrollStartOffset: function () {
+  getScrollStartOffset: function () {
     let offset = this.calcSize.header;
     if (this.useWindowScroll && this.options.wrapper) {
       let el = this.options.wrapper;
       do {
-        offset += el[offsetType[this.options.direction]];
+        offset += el[offsetDir[this.options.direction]];
       } while ((el = el.offsetParent) && el !== this.options.wrapper.ownerDocument);
     }
 
@@ -380,4 +383,5 @@ Virtual.prototype = {
   },
 };
 
+export { Virtual };
 export default Virtual;

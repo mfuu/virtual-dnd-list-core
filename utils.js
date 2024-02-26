@@ -1,40 +1,39 @@
-export function debounce(func, delay = 0, immediate = false) {
+export function throttle(fn, wait) {
   let timer = null;
-  let result;
-  let debounced = function (...args) {
-    if (timer) clearTimeout(timer);
-    if (immediate) {
-      let callNow = !timer;
-      timer = setTimeout(() => {
-        timer = null;
-      }, delay);
-      if (callNow) result = func.apply(this, args);
+
+  const result = function (...args) {
+    if (timer) return;
+
+    if (wait <= 0) {
+      fn.apply(this, args);
     } else {
       timer = setTimeout(() => {
-        func.apply(this, args);
-      }, delay);
+        timer = undefined;
+        fn.apply(this, args);
+      }, wait);
     }
-    return result;
   };
-  debounced.cancel = function () {
-    clearTimeout(timer);
-    timer = null;
+  result['cancel'] = function () {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
   };
-  return debounced;
+
+  return result;
 }
 
-export function throttle(fn, delay) {
-  let timer = null;
-  return function () {
-    const context = this,
-      args = arguments;
-    if (!timer) {
-      timer = setTimeout(function () {
-        timer = null;
-        fn.apply(context, args);
-      }, delay);
-    }
+export function debounce(fn, wait) {
+  const throttled = throttle(fn, wait);
+  const result = function () {
+    throttled['cancel']();
+    throttled.apply(this, arguments);
   };
+  result['cancel'] = function () {
+    throttled['cancel']();
+  };
+
+  return result;
 }
 
 export function getDataKey(item, dataKey) {
