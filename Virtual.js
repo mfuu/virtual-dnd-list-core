@@ -1,4 +1,4 @@
-import { utils } from 'sortable-dnd';
+import Dnd from 'sortable-dnd';
 import { debounce, throttle } from './utils';
 
 export const VirtualAttrs = [
@@ -153,7 +153,7 @@ Virtual.prototype = {
       });
     }
     if (key === 'scroller') {
-      oldValue && utils.off(oldValue, 'scroll', this.onScroll);
+      oldValue && Dnd.utils.off(oldValue, 'scroll', this.onScroll);
       this.scrollEl = this.getScrollElement(value);
       this.addScrollEventListener();
     }
@@ -194,13 +194,13 @@ Virtual.prototype = {
 
   addScrollEventListener() {
     if (this.options.scroller) {
-      utils.on(this.options.scroller, 'scroll', this.onScroll);
+      Dnd.utils.on(this.options.scroller, 'scroll', this.onScroll);
     }
   },
 
   removeScrollEventListener() {
     if (this.options.scroller) {
-      utils.off(this.options.scroller, 'scroll', this.onScroll);
+      Dnd.utils.off(this.options.scroller, 'scroll', this.onScroll);
     }
   },
 
