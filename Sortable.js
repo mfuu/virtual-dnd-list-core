@@ -5,6 +5,7 @@ export const SortableAttrs = [
   'delay',
   'group',
   'handle',
+  'lockAxis',
   'disabled',
   'draggable',
   'animation',

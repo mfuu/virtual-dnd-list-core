@@ -1,7 +1,6 @@
 # virtual-dnd-list-core
 
 **Sortbale**
-
 ```js
 import Sortable from './index.js';
 
@@ -29,7 +28,7 @@ let sortable = new Sortable(elem, {
 sortable.reRendered; // true: remove the dragged element on drop
 ```
 
-### Virtual
+**Virtual**
 ```js
 import Virtual from './index.js';
 
