@@ -1,13 +1,11 @@
 # virtual-dnd-list-core
 
-example usage [vue-virtual-drag-list](https://github.com/mfuu/vue-virtual-drag-list/blob/main/src/index.js) [vue3-virtual-drag-list](https://github.com/mfuu/vue3-virtual-drag-list/blob/master/src/index.tsx)
-
-### Sortbale
+**Sortbale**
 
 ```js
 import Sortable from './index.js';
 
-let s$ = new Sortable(elem, {
+let sortable = new Sortable(elem, {
   list: [],
   dataKey: 'data-key',
   onDrag: (params) => {
@@ -28,14 +26,14 @@ let s$ = new Sortable(elem, {
   },
 });
 
-s$.reRendered; // true: remove the dragged element on drop
+sortable.reRendered; // true: remove the dragged element on drop
 ```
 
 ### Virtual
 ```js
 import Virtual from './index.js';
 
-let v$ = new Virtual({
+let virtual = new Virtual({
   size: 0,
   keeps: 0,
   buffer: 0,
@@ -53,5 +51,5 @@ let v$ = new Virtual({
     let { start, end, front, behind } = range;
     // code
   }
-})
+});
 ```

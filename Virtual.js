@@ -73,8 +73,6 @@ function Virtual(options) {
   this.calcSize = { average: 0, total: 0, fixed: 0, header: 0 };
   this.scrollEl = this.getScrollElement(options.scroller);
   this.direction = '';
-  this.useWindowScroll = null;
-  this.onScroll = null;
 
   this.updateOnScrollFunction();
   this.addScrollEventListener();

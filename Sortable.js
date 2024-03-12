@@ -23,7 +23,6 @@ function Sortable(el, options) {
   this.list = [];
   this.store = {};
   this.reRendered = false;
-  this.attrs = SortableAttrs;
 
   this.init();
 }
