@@ -7,6 +7,20 @@ import Sortable from './index.js';
 let sortable = new Sortable(elem, {
   list: [],
   dataKey: 'data-key',
+  delay: 0,
+  group: '',
+  handle: '',
+  lockAxis: '',
+  disabled: false,
+  draggable: '',
+  animation: 150,
+  autoScroll: true,
+  ghostClass: '',
+  ghostStyle: {},
+  chosenClass: '',
+  fallbackOnBody: false,
+  scrollThreshold: 55,
+  delayOnTouchOnly: false,
   onDrag: (params) => {
     let { item, key, index } = params;
     // code

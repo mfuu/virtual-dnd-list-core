@@ -44,13 +44,11 @@ Sortable.prototype = {
     }
   },
 
-  // ========================================= Properties =========================================
   init() {
-    let props = {};
-    for (let i = 0; i < SortableAttrs.length; i++) {
-      let key = SortableAttrs[i];
-      props[key] = this.options[key];
-    }
+    const props = SortableAttrs.reduce((res, key) => {
+      res[key] = this.options[key];
+      return res;
+    }, {});
 
     this.sortable = new Dnd(this.el, {
       ...props,
@@ -73,7 +71,7 @@ Sortable.prototype = {
     this.store = {
       item,
       key,
-      origin: { index, list: this.list },
+      start: { index, list: this.list },
       from: { index, list: this.list },
       to: { index, list: this.list },
     };
@@ -110,10 +108,7 @@ Sortable.prototype = {
     this.list.splice(index, 0, item);
 
     Object.assign(this.store, {
-      to: {
-        index,
-        list: this.list,
-      },
+      to: { index, list: this.list },
     });
     this.sortable.option('store', this.store);
 
@@ -127,14 +122,13 @@ Sortable.prototype = {
       this.list = [...this.options.list];
 
       Object.assign(this.store, {
-        from: store.origin,
+        from: store.start,
       });
 
       return;
     }
 
     const { node, target, relative, backToOrigin } = params;
-
     const fromIndex = this.getIndex(this.list, node.dataset.key);
     const fromItem = this.list[fromIndex];
 
@@ -153,29 +147,17 @@ Sortable.prototype = {
     this.list.splice(toIndex, 0, fromItem);
 
     Object.assign(this.store, {
-      from: {
-        index: toIndex,
-        list: this.list,
-      },
-      to: {
-        index: toIndex,
-        list: this.list,
-      },
+      from: { index: toIndex, list: this.list },
+      to: { index: toIndex, list: this.list },
     });
   },
 
   onDrop(params) {
-    const { from, to } = this.getStore(params);
-    const changed = params.from !== params.to || from.origin.index !== to.to.index;
+    const { start, item, key } = Dnd.get(params.from).option('store');
+    const { to } = Dnd.get(params.to).option('store');
+    const changed = params.from !== params.to || start.index !== to.index;
 
-    this.dispatchEvent('onDrop', {
-      changed,
-      list: this.list,
-      item: from.item,
-      key: from.key,
-      from: from.origin,
-      to: to.to,
-    });
+    this.dispatchEvent('onDrop', { changed, list: this.list, item, key, from: start, to });
 
     if (params.from === this.el && this.reRendered) {
       Dnd.dragged?.remove();
@@ -196,16 +178,9 @@ Sortable.prototype = {
     return -1;
   },
 
-  getStore(params) {
-    return {
-      from: Dnd.get(params.from).option('store'),
-      to: Dnd.get(params.to).option('store'),
-    };
-  },
-
   dispatchEvent(name, params) {
     const cb = this.options[name];
-    if (cb) cb(params);
+    cb && cb(params);
   },
 };
 

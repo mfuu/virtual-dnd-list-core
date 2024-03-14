@@ -24,6 +24,7 @@ export interface SortableOptions {
   delay?: number;
   group?: any;
   handle?: any;
+  lockAxis?: 'x' | 'y';
   disabled?: boolean;
   draggable?: string;
   animation?: number;
@@ -48,8 +49,6 @@ declare class Sortable {
 
   constructor(el: HTMLElement, options: SortableOptions);
 
-  attrs: string[];
-
   reRendered: boolean;
 
   option<K extends keyof SortableOptions>(name: K, value: SortableOptions[K]): void;
@@ -69,7 +68,7 @@ export interface VirtualOptions {
   keeps?: number;
   buffer?: number;
   wrapper?: HTMLElement;
-  scroller?: HTMLElement | Window | Document;
+  scroller?: HTMLElement | Document;
   direction?: 'vertical' | 'horizontal';
   uniqueKeys?: any[];
   debounceTime?: number;
@@ -95,13 +94,11 @@ declare class Virtual {
 
   offset: number;
 
-  useWindowScroll: boolean;
-
   option<K extends keyof VirtualOptions>(name: K, value: VirtualOptions[K]): void;
 
   updateRange(range?: Range): void;
 
-  getSize(key: string | number): number;
+  getSize(key: any): number;
 
   getOffset(): number;
 
@@ -115,9 +112,7 @@ declare class Virtual {
 
   scrollToBottom(): void;
 
-  onItemResized(key: string | number, size: number): void;
-
-  onSlotResized(key: string | number, size: number): void;
+  onItemResized(key: any, size: number): void;
 
   addScrollEventListener(): void;
 
