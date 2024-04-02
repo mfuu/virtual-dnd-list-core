@@ -1,21 +1,21 @@
 export interface SortableParams {
   item: any;
   key: any;
-  index: number;
-}
-
-export interface SortableFromTo {
-  index: number;
-  list: any[];
+  index?: number;
+  event: any;
 }
 
 export interface DropParams {
-  changed: boolean;
-  list: any[];
-  item: any;
   key: any;
-  from: SortableFromTo;
-  to: SortableFromTo;
+  item: any;
+  list: any[];
+  event: any;
+  changed: boolean;
+  oldList: any[];
+  oldIndex: number;
+  newIndex: number;
+  listOnDrag: any[];
+  indexOnDrag: number;
 }
 
 export interface SortableOptions {
@@ -26,6 +26,7 @@ export interface SortableOptions {
   handle?: any;
   lockAxis?: 'x' | 'y';
   disabled?: boolean;
+  sortable?: boolean;
   draggable?: string;
   animation?: number;
   autoScroll?: boolean;

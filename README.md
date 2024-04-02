@@ -11,6 +11,7 @@ let sortable = new Sortable(elem, {
   group: '',
   handle: '',
   lockAxis: '',
+  sortable: true,
   disabled: false,
   draggable: '',
   animation: 150,
@@ -22,19 +23,19 @@ let sortable = new Sortable(elem, {
   scrollThreshold: 55,
   delayOnTouchOnly: false,
   onDrag: (params) => {
-    let { item, key, index } = params;
+    let { item, key, index, event } = params;
     // code
   },
   onDrop: (params) => {
-    let { changed, list, item, key, from, to } = params;
+    let { changed, list, item, key, event, oldList, oldIndex, newIndex, listOnDrag, indexOnDrag } = params;
     // code
   },
   onAdd: (params) => {
-    let { item, key, index } = params;
+    let { item, key, event } = params;
     // code
   },
   onRemove: (params) => {
-    let { item, key, index } = params;
+    let { item, key, event } = params;
     // code
   },
 });

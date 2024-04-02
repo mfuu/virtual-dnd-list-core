@@ -351,7 +351,7 @@ Virtual.prototype = {
   },
 
   getItemSize() {
-    return this.isFixed() ? this.calcSize.fixed : this.calcSize.average || this.options.size;
+    return this.isFixed() ? this.calcSize.fixed : this.options.size || this.calcSize.average;
   },
 
   getScrollElement: function (scroller) {
@@ -376,4 +376,3 @@ Virtual.prototype = {
 };
 
 export { Virtual };
-export default Virtual;

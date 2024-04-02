@@ -7,6 +7,7 @@ export const SortableAttrs = [
   'handle',
   'lockAxis',
   'disabled',
+  'sortable',
   'draggable',
   'animation',
   'autoScroll',
@@ -21,8 +22,8 @@ export const SortableAttrs = [
 function Sortable(el, options) {
   this.el = el;
   this.options = options;
-  this.list = [];
-  this.store = {};
+
+  this.list = options.list;
   this.reRendered = false;
 
   this.init();
@@ -33,7 +34,7 @@ Sortable.prototype = {
 
   destroy() {
     this.sortable && this.sortable.destroy();
-    this.sortable = this.store = this.reRendered = null;
+    this.sortable = this.reRendered = null;
   },
 
   option(key, value) {
@@ -54,115 +55,101 @@ Sortable.prototype = {
       ...props,
       swapOnDrop: (params) => params.from === params.to,
       onDrag: (params) => this.onDrag(params),
+      onDrop: (params) => this.onDrop(params),
       onAdd: (params) => this.onAdd(params),
       onRemove: (params) => this.onRemove(params),
-      onChange: (params) => this.onChange(params),
-      onDrop: (params) => this.onDrop(params),
     });
-    this.list = [...this.options.list];
   },
 
-  onDrag(params) {
-    const key = params.node.dataset.key;
+  onAdd(event) {
+    const { item, key } = Dnd.get(event.from).option('store');
+    this.dispatchEvent('onAdd', { item, key, event });
+  },
+
+  onRemove(event) {
+    const { item, key } = Dnd.get(event.from).option('store');
+    this.dispatchEvent('onRemove', { item, key, event });
+  },
+
+  onDrag(event) {
+    const key = event.node.getAttribute('data-key');
     const index = this.getIndex(this.list, key);
     const item = this.list[index];
 
     // store the drag item
-    this.store = {
-      item,
+    this.sortable.option('store', { item, key, index, list: this.list });
+    this.dispatchEvent('onDrag', { item, key, index, event });
+  },
+
+  onDrop(event) {
+    const cloneList = [...this.list];
+    const { list, item, key, index } = Dnd.get(event.from).option('store');
+    const params = {
       key,
-      start: { index, list: this.list },
-      from: { index, list: this.list },
-      to: { index, list: this.list },
+      item,
+      event,
+      changed: false,
+      list: cloneList,
+      oldList: this.list,
+      oldIndex: index,
+      newIndex: index,
+      listOnDrag: list,
+      indexOnDrag: index,
     };
-    this.sortable.option('store', this.store);
 
-    this.dispatchEvent('onDrag', { item, key, index });
-  },
+    if (!(event.from === event.to && event.node === event.target)) {
+      const targetKey = event.target.getAttribute('data-key');
+      let targetIndex = this.getIndex(cloneList, targetKey);
+      let oldIndex = index;
 
-  onRemove(params) {
-    const key = params.node.dataset.key;
-    const index = this.getIndex(this.list, key);
-    const item = this.list[index];
+      // changes position in current list
+      if (event.from === event.to) {
+        // re-get the dragged element's index
+        oldIndex = this.getIndex(this.list, event.node.getAttribute('data-key'));
+        if (
+          (oldIndex < targetIndex && event.relative === -1) ||
+          (oldIndex > targetIndex && event.relative === 1)
+        ) {
+          targetIndex += event.relative;
+        }
 
-    this.list.splice(index, 1);
+        if (targetIndex !== oldIndex) {
+          cloneList.splice(oldIndex, 1);
+          cloneList.splice(targetIndex, 0, item);
+        }
+        params.oldIndex = oldIndex;
+      } else {
+        // remove from
+        if (event.from === this.el) {
+          oldIndex = this.getIndex(this.list, event.node.getAttribute('data-key'));
+          cloneList.splice(oldIndex, 1);
+        }
 
-    Object.assign(this.store, { key, item });
-    this.sortable.option('store', this.store);
+        // added to
+        if (event.to === this.el) {
+          if (event.relative === 0) {
+            // added to last
+            targetIndex = cloneList.length;
+          } else if (event.relative === 1) {
+            targetIndex += event.relative;
+          }
 
-    this.dispatchEvent('onRemove', { item, key, index });
-  },
-
-  onAdd(params) {
-    const { from, target, relative } = params;
-    const { key, item } = Dnd.get(from).option('store');
-
-    let index = this.getIndex(this.list, target.dataset.key);
-
-    if (relative === 0) {
-      index = this.list.length;
-    } else if (relative === -1) {
-      index += 1;
-    }
-
-    this.list.splice(index, 0, item);
-
-    Object.assign(this.store, {
-      to: { index, list: this.list },
-    });
-    this.sortable.option('store', this.store);
-
-    this.dispatchEvent('onAdd', { item, key, index });
-  },
-
-  onChange(params) {
-    const store = Dnd.get(params.from).option('store');
-
-    if (params.revertDrag) {
-      this.list = [...this.options.list];
-
-      Object.assign(this.store, {
-        from: store.start,
-      });
-
-      return;
-    }
-
-    const { node, target, relative, backToOrigin } = params;
-    const fromIndex = this.getIndex(this.list, node.dataset.key);
-    const fromItem = this.list[fromIndex];
-
-    let toIndex = this.getIndex(this.list, target.dataset.key);
-
-    if (backToOrigin) {
-      if (relative === 1 && store.from.index < toIndex) {
-        toIndex -= 1;
+          cloneList.splice(targetIndex, 0, item);
+        }
       }
-      if (relative === -1 && store.from.index > toIndex) {
-        toIndex += 1;
-      }
+
+      params.changed = event.from !== event.to || targetIndex !== oldIndex;
+      params.list = cloneList;
+      params.oldIndex = oldIndex;
+      params.newIndex = targetIndex;
     }
 
-    this.list.splice(fromIndex, 1);
-    this.list.splice(toIndex, 0, fromItem);
+    this.dispatchEvent('onDrop', params);
 
-    Object.assign(this.store, {
-      from: { index: toIndex, list: this.list },
-      to: { index: toIndex, list: this.list },
-    });
-  },
-
-  onDrop(params) {
-    const { start, item, key } = Dnd.get(params.from).option('store');
-    const { to } = Dnd.get(params.to).option('store');
-    const changed = params.from !== params.to || start.index !== to.index;
-
-    this.dispatchEvent('onDrop', { changed, list: this.list, item, key, from: start, to });
-
-    if (params.from === this.el && this.reRendered) {
+    if (event.from === this.el && this.reRendered) {
       Dnd.dragged?.remove();
     }
-    if (params.from !== params.to && params.pullMode === 'clone') {
+    if (event.from !== event.to && event.pullMode === 'clone') {
       Dnd.clone?.remove();
     }
 
@@ -185,4 +172,3 @@ Sortable.prototype = {
 };
 
 export { Sortable };
-export default Sortable;
