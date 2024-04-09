@@ -22,20 +22,20 @@ let sortable = new Sortable(elem, {
   fallbackOnBody: false,
   scrollThreshold: 55,
   delayOnTouchOnly: false,
-  onDrag: (params) => {
-    let { item, key, index, event } = params;
+  onDrag: (event) => {
+    let { item, key, index, event } = event;
     // code
   },
-  onDrop: (params) => {
-    let { changed, list, item, key, event, oldList, oldIndex, newIndex, listOnDrag, indexOnDrag } = params;
+  onDrop: (event) => {
+    let { changed, list, item, key, event, oldList, oldIndex, newIndex, listOnDrag, indexOnDrag } = event;
     // code
   },
-  onAdd: (params) => {
-    let { item, key, event } = params;
+  onAdd: (event) => {
+    let { item, key, event } = event;
     // code
   },
-  onRemove: (params) => {
-    let { item, key, event } = params;
+  onRemove: (event) => {
+    let { item, key, event } = event;
     // code
   },
 });
@@ -51,14 +51,14 @@ let virtual = new Virtual({
   size: 0,
   keeps: 0,
   buffer: 0,
-  wrapper: document.getElementById('wrapper'),
-  scroller: document.getElementById('scroller'),
-  direction: 'vertical',
+  wrapper: HTMLElement,
+  scroller: HTMLElement,
+  direction: 'vertical', // or `horizontal`
   uniqueKeys: [],
   debounceTime: 0,
   throttleTime: 0,
-  onScroll: (params) => {
-    let { top, bottom, offset, direction } = params;
+  onScroll: (event) => {
+    let { top, bottom, offset, direction } = event;
     // code
   },
   onUpdate: (range) => {

@@ -199,7 +199,29 @@ Virtual.prototype = {
     }
   },
 
+  enableScroll(bool) {
+    const { scroller } = this.options;
+    const event = bool ? Dnd.utils.off : Dnd.utils.on;
+    const wheelEvent = 'onwheel' in document.createElement('div') ? 'wheel' : 'mousewheel';
+    event(scroller, 'DOMMouseScroll', this.preventDefault);
+    event(scroller, wheelEvent, this.preventDefault);
+    event(scroller, 'touchmove', this.preventDefault);
+    event(scroller, 'keydown', this.preventDefaultForKeyDown);
+  },
+
   // ========================================= Properties =========================================
+  preventDefault(e) {
+    e.preventDefault();
+  },
+
+  preventDefaultForKeyDown(e) {
+    const keys = { 37: 1, 38: 1, 39: 1, 40: 1 };
+    if (keys[e.keyCode]) {
+      this.preventDefault(e);
+      return false;
+    }
+  },
+
   updateOnScrollFunction() {
     const { debounceTime, throttleTime } = this.options;
     if (debounceTime) {
@@ -365,10 +387,13 @@ Virtual.prototype = {
   getScrollStartOffset: function () {
     let offset = 0;
 
-    const { wrapper, scroller } = this.options;
+    const { wrapper, scroller, direction } = this.options;
     if (wrapper && wrapper) {
-      const rect = Dnd.utils.getRect(wrapper, true, scroller);
-      offset = this.offset + rect[rectDir[this.options.direction]];
+      const rect =
+        scroller instanceof Window
+          ? Dnd.utils.getRect(wrapper)
+          : Dnd.utils.getRect(wrapper, true, scroller);
+      offset = this.offset + rect[rectDir[direction]];
     }
 
     return offset;
