@@ -97,6 +97,8 @@ declare class Virtual {
 
   option<K extends keyof VirtualOptions>(name: K, value: VirtualOptions[K]): void;
 
+  enableScroll(enable: boolean): void;
+
   updateRange(range?: Range): void;
 
   getSize(key: any): number;

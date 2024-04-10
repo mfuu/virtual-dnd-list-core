@@ -199,9 +199,9 @@ Virtual.prototype = {
     }
   },
 
-  enableScroll(bool) {
+  enableScroll(enable) {
     const { scroller } = this.options;
-    const event = bool ? Dnd.utils.off : Dnd.utils.on;
+    const event = enable ? Dnd.utils.off : Dnd.utils.on;
     const wheelEvent = 'onwheel' in document.createElement('div') ? 'wheel' : 'mousewheel';
     event(scroller, 'DOMMouseScroll', this.preventDefault);
     event(scroller, wheelEvent, this.preventDefault);
