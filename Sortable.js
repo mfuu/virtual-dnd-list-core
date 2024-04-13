@@ -52,6 +52,7 @@ Sortable.prototype = {
 
     this.sortable = new Dnd(this.el, {
       ...props,
+      emptyInsertThreshold: 0,
       swapOnDrop: (event) => event.from === event.to,
       onDrag: (event) => this.onDrag(event),
       onDrop: (event) => this.onDrop(event),
