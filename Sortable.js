@@ -101,8 +101,6 @@ Sortable.prototype = {
       oldList: this.list,
       oldIndex: index,
       newIndex: index,
-      listOnDrag: list,
-      indexOnDrag: index,
     };
 
     if (!(event.from === event.to && event.node === event.target)) {
