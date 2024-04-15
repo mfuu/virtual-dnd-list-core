@@ -388,7 +388,7 @@ Virtual.prototype = {
     let offset = 0;
 
     const { wrapper, scroller, direction } = this.options;
-    if (wrapper && wrapper) {
+    if (scroller && wrapper) {
       const rect =
         scroller instanceof Window
           ? Dnd.utils.getRect(wrapper)
