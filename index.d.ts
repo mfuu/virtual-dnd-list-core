@@ -14,8 +14,6 @@ export interface DropEvent {
   oldList: any[];
   oldIndex: number;
   newIndex: number;
-  listOnDrag: any[];
-  indexOnDrag: number;
 }
 
 export interface SortableOptions {

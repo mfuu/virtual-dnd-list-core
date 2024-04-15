@@ -27,7 +27,7 @@ let sortable = new Sortable(elem, {
     // code
   },
   onDrop: (event) => {
-    let { changed, list, item, key, event, oldList, oldIndex, newIndex, listOnDrag, indexOnDrag } = event;
+    let { changed, list, item, key, event, oldList, oldIndex, newIndex } = event;
     // code
   },
   onAdd: (event) => {
