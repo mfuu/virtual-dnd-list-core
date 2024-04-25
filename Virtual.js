@@ -16,35 +16,30 @@ const CACLTYPE = {
   DYNAMIC: 'DYNAMIC',
 };
 
-const SCROLL_DIRECTION = {
+const DIRECTION = {
   FRONT: 'FRONT',
   BEHIND: 'BEHIND',
   STATIONARY: 'STATIONARY',
 };
 
-const DIRECTION = {
-  HORIZONTAL: 'horizontal',
-  VERTICAL: 'vertical',
-};
-
 const rectDir = {
-  [DIRECTION.VERTICAL]: 'top',
-  [DIRECTION.HORIZONTAL]: 'left',
+  vertical: 'top',
+  horizontal: 'left',
 };
 
 const scrollDir = {
-  [DIRECTION.VERTICAL]: 'scrollTop',
-  [DIRECTION.HORIZONTAL]: 'scrollLeft',
+  vertical: 'scrollTop',
+  horizontal: 'scrollLeft',
 };
 
 const scrollSize = {
-  [DIRECTION.VERTICAL]: 'scrollHeight',
-  [DIRECTION.HORIZONTAL]: 'scrollWidth',
+  vertical: 'scrollHeight',
+  horizontal: 'scrollWidth',
 };
 
 const offsetSize = {
-  [DIRECTION.VERTICAL]: 'offsetHeight',
-  [DIRECTION.HORIZONTAL]: 'offsetWidth',
+  vertical: 'offsetHeight',
+  horizontal: 'offsetWidth',
 };
 
 function Virtual(options) {
@@ -71,9 +66,9 @@ function Virtual(options) {
   this.offset = 0;
   this.calcType = CACLTYPE.INIT;
   this.calcSize = { average: 0, total: 0, fixed: 0 };
-  this.scrollEl = this.getScrollElement(options.scroller);
-  this.scrollDir = '';
+  this.scrollDirection = '';
 
+  this.updateScrollElement();
   this.updateOnScrollFunction();
   this.addScrollEventListener();
   this.checkIfUpdate(0, options.keeps - 1);
@@ -83,11 +78,11 @@ Virtual.prototype = {
   constructor: Virtual,
 
   isFront() {
-    return this.scrollDir === SCROLL_DIRECTION.FRONT;
+    return this.scrollDirection === DIRECTION.FRONT;
   },
 
   isBehind() {
-    return this.scrollDir === SCROLL_DIRECTION.BEHIND;
+    return this.scrollDirection === DIRECTION.BEHIND;
   },
 
   isFixed() {
@@ -153,7 +148,7 @@ Virtual.prototype = {
     }
     if (key === 'scroller') {
       oldValue && Dnd.utils.off(oldValue, 'scroll', this.onScroll);
-      this.scrollEl = this.getScrollElement(value);
+      this.updateScrollElement();
       this.addScrollEventListener();
     }
   },
@@ -222,6 +217,15 @@ Virtual.prototype = {
     }
   },
 
+  updateScrollElement() {
+    const scroller = this.options.scroller;
+    if ((scroller instanceof Document && scroller.nodeType === 9) || scroller instanceof Window) {
+      this.scrollEl = document.scrollingElement || document.documentElement || document.body;
+    } else {
+      this.scrollEl = scroller;
+    }
+  },
+
   updateOnScrollFunction() {
     const { debounceTime, throttleTime } = this.options;
     if (debounceTime) {
@@ -239,9 +243,9 @@ Virtual.prototype = {
     const scrollSize = this.getScrollSize();
 
     if (offset === this.offset) {
-      this.scrollDir = SCROLL_DIRECTION.STATIONARY;
+      this.scrollDirection = DIRECTION.STATIONARY;
     } else {
-      this.scrollDir = offset < this.offset ? SCROLL_DIRECTION.FRONT : SCROLL_DIRECTION.BEHIND;
+      this.scrollDirection = offset < this.offset ? DIRECTION.FRONT : DIRECTION.BEHIND;
     }
 
     this.offset = offset;
@@ -249,7 +253,7 @@ Virtual.prototype = {
     const top = this.isFront() && offset <= 0;
     const bottom = this.isBehind() && clientSize + offset >= scrollSize;
 
-    this.options.onScroll({ top, bottom, offset, direction: this.scrollDir });
+    this.options.onScroll({ top, bottom, offset, direction: this.scrollDirection });
 
     if (this.isFront()) {
       this.handleScrollFront();
@@ -376,15 +380,7 @@ Virtual.prototype = {
     return this.isFixed() ? this.calcSize.fixed : this.options.size || this.calcSize.average;
   },
 
-  getScrollElement: function (scroller) {
-    if ((scroller instanceof Document && scroller.nodeType === 9) || scroller instanceof Window) {
-      return document.scrollingElement || document.documentElement || document.body;
-    }
-
-    return scroller;
-  },
-
-  getScrollStartOffset: function () {
+  getScrollStartOffset() {
     let offset = 0;
 
     const { wrapper, scroller, direction } = this.options;

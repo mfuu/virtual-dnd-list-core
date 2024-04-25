@@ -1,5 +1,4 @@
 import Dnd from 'sortable-dnd';
-import { getDataKey } from './utils';
 
 export const SortableAttrs = [
   'delay',
@@ -21,11 +20,10 @@ export const SortableAttrs = [
 
 function Sortable(el, options) {
   this.el = el;
-  this.list = options.list;
   this.options = options;
   this.reRendered = false;
 
-  this.init();
+  this.installSortable();
 }
 
 Sortable.prototype = {
@@ -37,14 +35,13 @@ Sortable.prototype = {
   },
 
   option(key, value) {
-    if (key === 'list') {
-      this.list = value;
-    } else {
+    this.options[key] = value;
+    if (SortableAttrs.includes(key)) {
       this.sortable.option(key, value);
     }
   },
 
-  init() {
+  installSortable() {
     const props = SortableAttrs.reduce((res, key) => {
       res[key] = this.options[key];
       return res;
@@ -76,35 +73,30 @@ Sortable.prototype = {
 
   onDrag(event) {
     const key = event.node.getAttribute('data-key');
-    const index = this.getIndex(this.list, key);
-    const item = this.list[index];
+    const index = this.getIndex(key);
+    const item = this.options.list[index];
 
     // store the dragged item
-    this.sortable.option('store', { item, key, index, list: this.list });
+    this.sortable.option('store', { item, key, index });
     this.dispatchEvent('onDrag', { item, key, index, event });
-
-    // do not allow auto-scroll when `sortable: false`
-    if (!this.options.sortable) {
-      this.sortable.option('autoScroll', false);
-    }
   },
 
   onDrop(event) {
-    const { list, item, key, index } = Dnd.get(event.from).option('store');
-    const cloneList = [...this.list];
+    const { item, key, index } = Dnd.get(event.from).option('store');
+    const list = this.options.list;
     const params = {
       key,
       item,
+      list,
       event,
       changed: false,
-      list: cloneList,
-      oldList: this.list,
+      oldList: list,
       oldIndex: index,
       newIndex: index,
     };
 
     if (!(event.from === event.to && event.node === event.target)) {
-      this.getDropParams(params, event, item, key, index, cloneList);
+      this.getDropParams(params, event, item, key, index, list);
     }
 
     this.dispatchEvent('onDrop', params);
@@ -117,65 +109,59 @@ Sortable.prototype = {
     }
 
     this.reRendered = false;
-    this.sortable.option('autoScroll', this.options.autoScroll);
   },
 
-  getDropParams(params, event, item, key, index, cloneList) {
+  getDropParams(params, event, item, key, index, list) {
     const targetKey = event.target.getAttribute('data-key');
-    let targetIndex = -1;
+    let newIndex = -1;
     let oldIndex = index;
 
     // changes position in current list
     if (event.from === event.to) {
       // re-get the dragged element's index
-      oldIndex = this.getIndex(cloneList, key);
-      targetIndex = this.getIndex(cloneList, targetKey);
+      oldIndex = this.getIndex(key);
+      newIndex = this.getIndex(targetKey);
       if (
-        (oldIndex < targetIndex && event.relative === -1) ||
-        (oldIndex > targetIndex && event.relative === 1)
+        (oldIndex < newIndex && event.relative === -1) ||
+        (oldIndex > newIndex && event.relative === 1)
       ) {
-        targetIndex += event.relative;
+        newIndex += event.relative;
       }
 
-      if (targetIndex !== oldIndex) {
-        cloneList.splice(oldIndex, 1);
-        cloneList.splice(targetIndex, 0, item);
+      if (newIndex !== oldIndex) {
+        list.splice(oldIndex, 1);
+        list.splice(newIndex, 0, item);
       }
     } else {
       // remove from
       if (event.from === this.el) {
-        oldIndex = this.getIndex(cloneList, key);
-        cloneList.splice(oldIndex, 1);
+        oldIndex = this.getIndex(key);
+        list.splice(oldIndex, 1);
       }
 
       // added to
       if (event.to === this.el) {
         oldIndex = -1;
-        targetIndex = this.getIndex(cloneList, targetKey);
+        newIndex = this.getIndex(targetKey);
         if (event.relative === 0) {
           // added to last
-          targetIndex = cloneList.length;
+          newIndex = list.length;
         } else if (event.relative === 1) {
-          targetIndex += event.relative;
+          newIndex += event.relative;
         }
 
-        cloneList.splice(targetIndex, 0, item);
+        list.splice(newIndex, 0, item);
       }
     }
 
-    params.changed = event.from !== event.to || targetIndex !== oldIndex;
-    params.list = cloneList;
+    params.changed = event.from !== event.to || newIndex !== oldIndex;
+    params.list = list;
     params.oldIndex = oldIndex;
-    params.newIndex = targetIndex;
+    params.newIndex = newIndex;
   },
 
-  getIndex(list, key) {
-    for (let i = 0; i < list.length; i++) {
-      if (getDataKey(list[i], this.options.dataKey) == key) {
-        return i;
-      }
-    }
-    return -1;
+  getIndex(key) {
+    return this.options.uniqueKeys.indexOf(key);
   },
 
   dispatchEvent(name, params) {

@@ -18,7 +18,7 @@ export interface DropEvent {
 
 export interface SortableOptions {
   list: any[];
-  dataKey: string;
+  uniqueKeys: any[];
   delay?: number;
   group?: any;
   handle?: any;
@@ -34,10 +34,10 @@ export interface SortableOptions {
   fallbackOnBody?: boolean;
   scrollThreshold?: number;
   delayOnTouchOnly?: boolean;
-  onDrag?: (params: SortableEvent) => void;
-  onAdd?: (params: SortableEvent) => void;
-  onRemove?: (params: SortableEvent) => void;
-  onDrop?: (params: DropEvent) => void;
+  onDrag?: (event: SortableEvent) => void;
+  onAdd?: (event: SortableEvent) => void;
+  onRemove?: (event: SortableEvent) => void;
+  onDrop?: (event: DropEvent) => void;
 }
 
 declare const SortableAttrs: any[];
@@ -72,7 +72,7 @@ export interface VirtualOptions {
   uniqueKeys?: any[];
   debounceTime?: number;
   throttleTime?: number;
-  onScroll?: (params: ScrollEvent) => void;
+  onScroll?: (event: ScrollEvent) => void;
   onUpdate?: (range: Range) => void;
 }
 
