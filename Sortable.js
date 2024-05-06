@@ -90,7 +90,7 @@ Sortable.prototype = {
       list,
       event,
       changed: false,
-      oldList: list,
+      oldList: [...list],
       oldIndex: index,
       newIndex: index,
     };
