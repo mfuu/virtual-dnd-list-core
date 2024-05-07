@@ -6,7 +6,7 @@ import Sortable from './index.js';
 
 let sortable = new Sortable(elem, {
   list: [],
-  dataKey: 'data-key',
+  uniqueKeys: [],
   delay: 0,
   group: '',
   handle: '',
