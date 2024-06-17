@@ -1,6 +1,6 @@
 import Dnd from 'sortable-dnd';
 
-export const SortableAttrs = [
+const SortableAttrs = [
   'delay',
   'group',
   'handle',
@@ -53,22 +53,7 @@ Sortable.prototype = {
       swapOnDrop: (event) => event.from === event.to,
       onDrag: (event) => this.onDrag(event),
       onDrop: (event) => this.onDrop(event),
-      onAdd: (event) => this.onAdd(event),
-      onRemove: (event) => this.onRemove(event),
     });
-  },
-
-  onAdd(event) {
-    const { item, key } = Dnd.get(event.from).option('store');
-
-    // store the dragged item
-    this.sortable.option('store', { item, key });
-    this.dispatchEvent('onAdd', { item, key, event });
-  },
-
-  onRemove(event) {
-    const { item, key } = Dnd.get(event.from).option('store');
-    this.dispatchEvent('onRemove', { item, key, event });
   },
 
   onDrag(event) {
@@ -96,7 +81,7 @@ Sortable.prototype = {
     };
 
     if (!(event.from === event.to && event.node === event.target)) {
-      this.getDropParams(params, event, item, key, index, list);
+      this.handleDropEvent(params, event, item, key, index, list);
     }
 
     this.dispatchEvent('onDrop', params);
@@ -111,7 +96,7 @@ Sortable.prototype = {
     this.reRendered = false;
   },
 
-  getDropParams(params, event, item, key, index, list) {
+  handleDropEvent(params, event, item, key, index, list) {
     const targetKey = event.target.getAttribute('data-key');
     let newIndex = -1;
     let oldIndex = index;
@@ -170,4 +155,4 @@ Sortable.prototype = {
   },
 };
 
-export { Sortable };
+export { Sortable, SortableAttrs };

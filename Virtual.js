@@ -1,7 +1,7 @@
 import Dnd from 'sortable-dnd';
 import { debounce, throttle } from './utils';
 
-export const VirtualAttrs = [
+const VirtualAttrs = [
   'size',
   'keeps',
   'scroller',
@@ -65,7 +65,7 @@ function Virtual(options) {
   this.range = { start: 0, end: 0, front: 0, behind: 0 };
   this.offset = 0;
   this.calcType = CACLTYPE.INIT;
-  this.calcSize = { average: 0, total: 0, fixed: 0 };
+  this.calcSize = { average: 0, fixed: 0 };
   this.scrollDirection = '';
 
   this.updateScrollElement();
@@ -166,6 +166,10 @@ Virtual.prototype = {
   },
 
   onItemResized(key, size) {
+    if (this.sizes.get(key) === size) {
+      return;
+    }
+
     this.sizes.set(key, size);
 
     if (this.calcType === CACLTYPE.INIT) {
@@ -173,12 +177,16 @@ Virtual.prototype = {
       this.calcSize.fixed = size;
     } else if (this.isFixed() && this.calcSize.fixed !== size) {
       this.calcType = CACLTYPE.DYNAMIC;
-      this.calcSize.fixed = undefined;
+      this.calcSize.fixed = 0;
     }
-    // In the case of non-fixed heights, the average height and the total height are calculated
-    if (this.calcType !== CACLTYPE.FIXED) {
-      this.calcSize.total = [...this.sizes.values()].reduce((t, i) => t + i, 0);
-      this.calcSize.average = Math.round(this.calcSize.total / this.sizes.size);
+
+    // calculate the average size only once
+    if (this.calcType !== CACLTYPE.FIXED && !this.calcSize.average) {
+      const critical = Math.min(this.options.keeps, this.options.uniqueKeys.length);
+      if (this.sizes.size === critical) {
+        const total = [...this.sizes.values()].reduce((t, i) => t + i, 0);
+        this.calcSize.average = Math.round(total / this.sizes.size);
+      }
     }
   },
 
@@ -384,6 +392,11 @@ Virtual.prototype = {
     let offset = 0;
 
     const { wrapper, scroller, direction } = this.options;
+
+    if (scroller === wrapper) {
+      return 0;
+    }
+
     if (scroller && wrapper) {
       const rect =
         scroller instanceof Window
@@ -396,4 +409,4 @@ Virtual.prototype = {
   },
 };
 
-export { Virtual };
+export { Virtual, VirtualAttrs };

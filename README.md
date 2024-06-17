@@ -22,22 +22,8 @@ let sortable = new Sortable(elem, {
   fallbackOnBody: false,
   scrollThreshold: 55,
   delayOnTouchOnly: false,
-  onDrag: (event) => {
-    let { item, key, index, event } = event;
-    // code
-  },
-  onDrop: (event) => {
-    let { changed, list, item, key, event, oldList, oldIndex, newIndex } = event;
-    // code
-  },
-  onAdd: (event) => {
-    let { item, key, event } = event;
-    // code
-  },
-  onRemove: (event) => {
-    let { item, key, event } = event;
-    // code
-  },
+  onDrag: (event) => {},
+  onDrop: (event) => {},
 });
 
 sortable.reRendered; // true: remove the dragged element on drop
@@ -57,13 +43,7 @@ let virtual = new Virtual({
   uniqueKeys: [],
   debounceTime: 0,
   throttleTime: 0,
-  onScroll: (event) => {
-    let { top, bottom, offset, direction } = event;
-    // code
-  },
-  onUpdate: (range) => {
-    let { start, end, front, behind } = range;
-    // code
-  }
+  onScroll: (event) => {},
+  onUpdate: (range) => {}
 });
 ```
