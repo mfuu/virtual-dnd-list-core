@@ -1,4 +1,4 @@
-export interface SortableEvent {
+export interface DragEvent {
   item: any;
   key: any;
   index?: number;
@@ -21,7 +21,7 @@ export interface SortableOptions {
   uniqueKeys: any[];
   delay?: number;
   group?: any;
-  handle?: any;
+  handle?: string;
   lockAxis?: 'x' | 'y';
   disabled?: boolean;
   sortable?: boolean;
@@ -34,13 +34,11 @@ export interface SortableOptions {
   fallbackOnBody?: boolean;
   scrollThreshold?: number;
   delayOnTouchOnly?: boolean;
-  onDrag?: (event: SortableEvent) => void;
-  onAdd?: (event: SortableEvent) => void;
-  onRemove?: (event: SortableEvent) => void;
+  onDrag?: (event: DragEvent) => void;
   onDrop?: (event: DropEvent) => void;
 }
 
-declare const SortableAttrs: any[];
+declare const SortableAttrs: string[];
 
 declare class Sortable {
   public el: HTMLElement;
@@ -83,13 +81,13 @@ export interface Range {
   behind: number;
 }
 
-declare const VirtualAttrs: any[];
+declare const VirtualAttrs: string[];
 
 declare class Virtual {
   public options: VirtualOptions;
   constructor(options: VirtualOptions);
 
-  sizes: Map<any, number>;
+  sizes: Map<string | number, number>;
 
   offset: number;
 
@@ -99,7 +97,7 @@ declare class Virtual {
 
   updateRange(range?: Range): void;
 
-  getSize(key: any): number;
+  getSize(key: string | number): number;
 
   getOffset(): number;
 
@@ -113,7 +111,7 @@ declare class Virtual {
 
   scrollToBottom(): void;
 
-  onItemResized(key: any, size: number): void;
+  onItemResized(key: string | number, size: number): void;
 
   addScrollEventListener(): void;
 

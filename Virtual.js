@@ -181,7 +181,7 @@ Virtual.prototype = {
     }
 
     // calculate the average size only once
-    if (this.calcType !== CACLTYPE.FIXED && !this.calcSize.average) {
+    if (this.calcType === CACLTYPE.DYNAMIC && !this.calcSize.average) {
       const critical = Math.min(this.options.keeps, this.options.uniqueKeys.length);
       if (this.sizes.size === critical) {
         const total = [...this.sizes.values()].reduce((t, i) => t + i, 0);
@@ -272,7 +272,7 @@ Virtual.prototype = {
 
   handleScrollFront() {
     const scrolls = this.getScrollItems();
-    if (scrolls > this.range.start) {
+    if (scrolls >= this.range.start) {
       return;
     }
     const start = Math.max(scrolls - this.options.buffer, 0);
@@ -282,7 +282,7 @@ Virtual.prototype = {
   handleScrollBehind() {
     const scrolls = this.getScrollItems();
 
-    if (scrolls < this.range.start + this.options.buffer) {
+    if (scrolls <= this.range.start + this.options.buffer) {
       return;
     }
     this.checkIfUpdate(scrolls, this.getEndByStart(scrolls));
