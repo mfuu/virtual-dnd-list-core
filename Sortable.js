@@ -13,6 +13,7 @@ const SortableAttrs = [
   'ghostClass',
   'ghostStyle',
   'chosenClass',
+  'scrollSpeed',
   'fallbackOnBody',
   'scrollThreshold',
   'delayOnTouchOnly',

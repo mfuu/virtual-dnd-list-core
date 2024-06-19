@@ -16,6 +16,11 @@ export interface DropEvent {
   newIndex: number;
 }
 
+export interface ScrollSpeed {
+  x: number;
+  y: number;
+}
+
 export interface SortableOptions {
   list: any[];
   uniqueKeys: any[];
@@ -31,6 +36,7 @@ export interface SortableOptions {
   ghostClass?: string;
   ghostStyle?: any;
   chosenClass?: string;
+  scrollSpeed?: ScrollSpeed;
   fallbackOnBody?: boolean;
   scrollThreshold?: number;
   delayOnTouchOnly?: boolean;
