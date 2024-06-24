@@ -275,16 +275,17 @@ Virtual.prototype = {
     if (scrolls >= this.range.start) {
       return;
     }
+
     const start = Math.max(scrolls - this.options.buffer, 0);
     this.checkIfUpdate(start, this.getEndByStart(start));
   },
 
   handleScrollBehind() {
     const scrolls = this.getScrollItems();
-
-    if (scrolls <= this.range.start + this.options.buffer) {
+    if (scrolls < this.range.start + this.options.buffer) {
       return;
     }
+
     this.checkIfUpdate(scrolls, this.getEndByStart(scrolls));
   },
 
