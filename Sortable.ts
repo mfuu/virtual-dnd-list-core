@@ -1,6 +1,54 @@
-import Dnd from 'sortable-dnd';
+import Dnd, { Group, SortableEvent } from 'sortable-dnd';
 
-const SortableAttrs = [
+type EmitEvents = 'onDrag' | 'onDrop';
+
+export interface DragEvent {
+  item: any;
+  key: any;
+  index?: number;
+  event: SortableEvent;
+}
+
+export interface DropEvent {
+  key: any;
+  item: any;
+  list: any[];
+  event: SortableEvent;
+  changed: boolean;
+  oldList: any[];
+  oldIndex: number;
+  newIndex: number;
+}
+
+export interface ScrollSpeed {
+  x: number;
+  y: number;
+}
+
+export interface SortableOptions {
+  list: any[];
+  uniqueKeys: any[];
+  delay?: number;
+  group?: string | Group;
+  handle?: string;
+  lockAxis?: 'x' | 'y';
+  disabled?: boolean;
+  sortable?: boolean;
+  draggable?: string;
+  animation?: number;
+  autoScroll?: boolean;
+  ghostClass?: string;
+  ghostStyle?: CSSStyleDeclaration;
+  chosenClass?: string;
+  scrollSpeed?: ScrollSpeed;
+  fallbackOnBody?: boolean;
+  scrollThreshold?: number;
+  delayOnTouchOnly?: boolean;
+  onDrag: (event: DragEvent) => void;
+  onDrop: (event: DropEvent) => void;
+}
+
+export const SortableAttrs = [
   'delay',
   'group',
   'handle',
@@ -19,28 +67,30 @@ const SortableAttrs = [
   'delayOnTouchOnly',
 ];
 
-function Sortable(el, options) {
-  this.el = el;
-  this.options = options;
-  this.reRendered = false;
+export class Sortable {
+  el: HTMLElement;
+  options: SortableOptions;
+  sortable: Dnd;
+  reRendered: boolean;
+  constructor(el: HTMLElement, options: SortableOptions) {
+    this.el = el;
+    this.options = options;
+    this.reRendered = false;
 
-  this.installSortable();
-}
-
-Sortable.prototype = {
-  constructor: Sortable,
+    this.installSortable();
+  }
 
   destroy() {
-    this.sortable && this.sortable.destroy();
-    this.sortable = this.reRendered = null;
-  },
+    this.sortable.destroy();
+    this.reRendered = false;
+  }
 
   option(key, value) {
     this.options[key] = value;
     if (SortableAttrs.includes(key)) {
       this.sortable.option(key, value);
     }
-  },
+  }
 
   installSortable() {
     const props = SortableAttrs.reduce((res, key) => {
@@ -55,9 +105,9 @@ Sortable.prototype = {
       onDrag: (event) => this.onDrag(event),
       onDrop: (event) => this.onDrop(event),
     });
-  },
+  }
 
-  onDrag(event) {
+  onDrag(event: SortableEvent) {
     const key = event.node.getAttribute('data-key');
     const index = this.getIndex(key);
     const item = this.options.list[index];
@@ -65,10 +115,10 @@ Sortable.prototype = {
     // store the dragged item
     this.sortable.option('store', { item, key, index });
     this.dispatchEvent('onDrag', { item, key, index, event });
-  },
+  }
 
-  onDrop(event) {
-    const { item, key, index } = Dnd.get(event.from).option('store');
+  onDrop(event: SortableEvent) {
+    const { item, key, index } = Dnd.get(event.from)?.option('store');
     const list = this.options.list;
     const params = {
       key,
@@ -82,7 +132,7 @@ Sortable.prototype = {
     };
 
     if (!(event.from === event.to && event.node === event.target)) {
-      this.handleDropEvent(params, event, item, key, index, list);
+      this.handleDropEvent(event, params, item, key, index, list);
     }
 
     this.dispatchEvent('onDrop', params);
@@ -95,9 +145,9 @@ Sortable.prototype = {
     }
 
     this.reRendered = false;
-  },
+  }
 
-  handleDropEvent(params, event, item, key, index, list) {
+  handleDropEvent(event: SortableEvent, params, item, key, index, list) {
     const targetKey = event.target.getAttribute('data-key');
     let newIndex = -1;
     let oldIndex = index;
@@ -144,16 +194,14 @@ Sortable.prototype = {
     params.list = list;
     params.oldIndex = oldIndex;
     params.newIndex = newIndex;
-  },
+  }
 
   getIndex(key) {
     return this.options.uniqueKeys.indexOf(key);
-  },
+  }
 
-  dispatchEvent(name, params) {
+  dispatchEvent(name: EmitEvents, params) {
     const cb = this.options[name];
     cb && cb(params);
-  },
-};
-
-export { Sortable, SortableAttrs };
+  }
+}

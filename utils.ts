@@ -1,5 +1,5 @@
-export function throttle(fn, wait) {
-  let timer = null;
+export function throttle(fn: Function, wait: number) {
+  let timer: NodeJS.Timeout | null;
 
   const result = function (...args) {
     if (timer) return;
@@ -8,7 +8,7 @@ export function throttle(fn, wait) {
       fn.apply(this, args);
     } else {
       timer = setTimeout(() => {
-        timer = undefined;
+        timer = null;
         fn.apply(this, args);
       }, wait);
     }
@@ -23,7 +23,7 @@ export function throttle(fn, wait) {
   return result;
 }
 
-export function debounce(fn, wait) {
+export function debounce(fn: Function, wait: number) {
   const throttled = throttle(fn, wait);
   const result = function () {
     throttled['cancel']();
@@ -36,8 +36,12 @@ export function debounce(fn, wait) {
   return result;
 }
 
-export function getDataKey(item, dataKey) {
+export function getDataKey(item, dataKey: string | string[]) {
   return (
     !Array.isArray(dataKey) ? dataKey.replace(/\[/g, '.').replace(/\]/g, '.').split('.') : dataKey
   ).reduce((o, k) => (o || {})[k], item);
+}
+
+export function elementIsDocumentOrWindow(element) {
+  return (element instanceof Document && element.nodeType === 9) || element instanceof Window;
 }

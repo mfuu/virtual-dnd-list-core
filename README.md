@@ -19,6 +19,7 @@ let sortable = new Sortable(elem, {
   ghostClass: '',
   ghostStyle: {},
   chosenClass: '',
+  scrollSpeed: { x: 10, y: 10 },
   fallbackOnBody: false,
   scrollThreshold: 55,
   delayOnTouchOnly: false,

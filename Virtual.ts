@@ -1,7 +1,44 @@
 import Dnd from 'sortable-dnd';
-import { debounce, throttle } from './utils';
+import { debounce, elementIsDocumentOrWindow, throttle } from './utils';
 
-const VirtualAttrs = [
+type CACLTYPE = 'INIT' | 'FIXED' | 'DYNAMIC';
+
+type DIRECTION = 'FRONT' | 'BEHIND' | 'STATIONARY';
+
+interface CalcSize {
+  fixed: number;
+  average: number;
+}
+
+export interface Range {
+  start: number;
+  end: number;
+  front: number;
+  behind: number;
+}
+
+export interface ScrollEvent {
+  top: boolean;
+  bottom: boolean;
+  offset: number;
+  direction: DIRECTION;
+}
+
+export interface VirtualOptions {
+  size?: number;
+  keeps?: number;
+  buffer?: number;
+  wrapper?: HTMLElement;
+  scroller?: any;
+  direction?: 'vertical' | 'horizontal';
+  uniqueKeys?: any[];
+  debounceTime?: number;
+  throttleTime?: number;
+  onScroll: (event: ScrollEvent) => void;
+  onUpdate: (range: Range) => void;
+}
+
+export const VirtualAttrs = [
   'size',
   'keeps',
   'scroller',
@@ -9,18 +46,6 @@ const VirtualAttrs = [
   'debounceTime',
   'throttleTime',
 ];
-
-const CACLTYPE = {
-  INIT: 'INIT',
-  FIXED: 'FIXED',
-  DYNAMIC: 'DYNAMIC',
-};
-
-const DIRECTION = {
-  FRONT: 'FRONT',
-  BEHIND: 'BEHIND',
-  STATIONARY: 'STATIONARY',
-};
 
 const rectDir = {
   vertical: 'top',
@@ -42,74 +67,82 @@ const offsetSize = {
   horizontal: 'offsetWidth',
 };
 
-function Virtual(options) {
-  this.options = options;
+export class Virtual {
+  sizes: Map<any, number>;
+  range: Range;
+  offset: number;
+  options: VirtualOptions;
+  calcType: CACLTYPE;
+  calcSize: CalcSize;
+  scrollEl: Element | HTMLElement;
+  scrollDirection: DIRECTION;
 
-  const defaults = {
-    size: 0,
-    keeps: 0,
-    buffer: 0,
-    wrapper: null,
-    scroller: null,
-    direction: 'vertical',
-    uniqueKeys: [],
-    debounceTime: null,
-    throttleTime: null,
-  };
+  onScroll: () => void;
+  constructor(options: VirtualOptions) {
+    this.options = options;
 
-  for (const name in defaults) {
-    !(name in this.options) && (this.options[name] = defaults[name]);
+    const defaults = {
+      size: 0,
+      keeps: 0,
+      buffer: 0,
+      wrapper: null,
+      scroller: null,
+      direction: 'vertical',
+      uniqueKeys: [],
+      debounceTime: null,
+      throttleTime: null,
+    };
+
+    for (const name in defaults) {
+      !(name in this.options) && (this.options[name] = defaults[name]);
+    }
+
+    this.sizes = new Map(); // store item size
+    this.range = { start: 0, end: 0, front: 0, behind: 0 };
+    this.offset = 0;
+    this.calcType = 'INIT';
+    this.calcSize = { average: 0, fixed: 0 };
+    this.scrollDirection = 'STATIONARY';
+
+    this.updateScrollElement();
+    this.updateOnScrollFunction();
+    this.addScrollEventListener();
+    this.checkIfUpdate(0, options.keeps - 1);
   }
 
-  this.sizes = new Map(); // store item size
-  this.range = { start: 0, end: 0, front: 0, behind: 0 };
-  this.offset = 0;
-  this.calcType = CACLTYPE.INIT;
-  this.calcSize = { average: 0, fixed: 0 };
-  this.scrollDirection = '';
-
-  this.updateScrollElement();
-  this.updateOnScrollFunction();
-  this.addScrollEventListener();
-  this.checkIfUpdate(0, options.keeps - 1);
-}
-
-Virtual.prototype = {
-  constructor: Virtual,
-
   isFront() {
-    return this.scrollDirection === DIRECTION.FRONT;
-  },
+    return this.scrollDirection === 'FRONT';
+  }
 
   isBehind() {
-    return this.scrollDirection === DIRECTION.BEHIND;
-  },
+    return this.scrollDirection === 'BEHIND';
+  }
 
   isFixed() {
-    return this.calcType === CACLTYPE.FIXED;
-  },
+    return this.calcType === 'FIXED';
+  }
 
-  getSize(key) {
+  getSize(key: string | number) {
     return this.sizes.get(key) || this.getItemSize();
-  },
+  }
 
   getOffset() {
     return this.scrollEl[scrollDir[this.options.direction]];
-  },
+  }
 
   getScrollSize() {
     return this.scrollEl[scrollSize[this.options.direction]];
-  },
+  }
 
   getClientSize() {
     return this.scrollEl[offsetSize[this.options.direction]];
-  },
+  }
 
-  scrollToOffset(offset) {
+  scrollToOffset(offset: number) {
     this.scrollEl[scrollDir[this.options.direction]] = offset;
-  },
+  }
 
-  scrollToIndex(index) {
+  scrollToIndex(index: number) {
     if (index >= this.options.uniqueKeys.length - 1) {
       this.scrollToBottom();
     } else {
@@ -117,7 +150,7 @@ Virtual.prototype = {
       const startOffset = this.getScrollStartOffset();
       this.scrollToOffset(indexOffset + startOffset);
     }
-  },
+  }
 
   scrollToBottom() {
     const offset = this.getScrollSize();
@@ -132,7 +165,7 @@ Virtual.prototype = {
         this.scrollToBottom();
       }
     }, 5);
-  },
+  }
 
   option(key, value) {
     const oldValue = this.options[key];
@@ -151,9 +184,9 @@ Virtual.prototype = {
       this.updateScrollElement();
       this.addScrollEventListener();
     }
-  },
+  }
 
-  updateRange(range) {
+  updateRange(range?: Range) {
     if (range) {
       this.handleUpdate(range.start, range.end);
       return;
@@ -163,44 +196,44 @@ Virtual.prototype = {
     start = Math.max(start, 0);
 
     this.handleUpdate(start, this.getEndByStart(start));
-  },
+  }
 
-  onItemResized(key, size) {
+  onItemResized(key, size: number) {
     if (this.sizes.get(key) === size) {
       return;
     }
 
     this.sizes.set(key, size);
 
-    if (this.calcType === CACLTYPE.INIT) {
-      this.calcType = CACLTYPE.FIXED;
+    if (this.calcType === 'INIT') {
+      this.calcType = 'FIXED';
       this.calcSize.fixed = size;
     } else if (this.isFixed() && this.calcSize.fixed !== size) {
-      this.calcType = CACLTYPE.DYNAMIC;
+      this.calcType = 'DYNAMIC';
       this.calcSize.fixed = 0;
     }
 
     // calculate the average size only once
-    if (this.calcType === CACLTYPE.DYNAMIC && !this.calcSize.average) {
+    if (this.calcType === 'DYNAMIC' && !this.calcSize.average) {
       const critical = Math.min(this.options.keeps, this.options.uniqueKeys.length);
       if (this.sizes.size === critical) {
         const total = [...this.sizes.values()].reduce((t, i) => t + i, 0);
         this.calcSize.average = Math.round(total / this.sizes.size);
       }
     }
-  },
+  }
 
   addScrollEventListener() {
     if (this.options.scroller) {
-      Dnd.utils.on(this.options.scroller, 'scroll', this.onScroll);
+      Dnd.utils.on(this.options.scroller as any, 'scroll', this.onScroll);
     }
-  },
+  }
 
   removeScrollEventListener() {
     if (this.options.scroller) {
-      Dnd.utils.off(this.options.scroller, 'scroll', this.onScroll);
+      Dnd.utils.off(this.options.scroller as any, 'scroll', this.onScroll);
     }
-  },
+  }
 
   enableScroll(enable) {
     const { scroller } = this.options;
@@ -210,12 +243,12 @@ Virtual.prototype = {
     event(scroller, wheelEvent, this.preventDefault);
     event(scroller, 'touchmove', this.preventDefault);
     event(scroller, 'keydown', this.preventDefaultForKeyDown);
-  },
+  }
 
   // ========================================= Properties =========================================
   preventDefault(e) {
     e.preventDefault();
-  },
+  }
 
   preventDefaultForKeyDown(e) {
     const keys = { 37: 1, 38: 1, 39: 1, 40: 1 };
@@ -223,16 +256,16 @@ Virtual.prototype = {
       this.preventDefault(e);
       return false;
     }
-  },
+  }
 
   updateScrollElement() {
     const scroller = this.options.scroller;
-    if ((scroller instanceof Document && scroller.nodeType === 9) || scroller instanceof Window) {
+    if (elementIsDocumentOrWindow(scroller)) {
       this.scrollEl = document.scrollingElement || document.documentElement || document.body;
     } else {
       this.scrollEl = scroller;
     }
-  },
+  }
 
   updateOnScrollFunction() {
     const { debounceTime, throttleTime } = this.options;
@@ -243,7 +276,7 @@ Virtual.prototype = {
     } else {
       this.onScroll = () => this.handleScroll();
     }
-  },
+  }
 
   handleScroll() {
     const offset = this.getOffset();
@@ -251,9 +284,9 @@ Virtual.prototype = {
     const scrollSize = this.getScrollSize();
 
     if (offset === this.offset) {
-      this.scrollDirection = DIRECTION.STATIONARY;
+      this.scrollDirection = 'STATIONARY';
     } else {
-      this.scrollDirection = offset < this.offset ? DIRECTION.FRONT : DIRECTION.BEHIND;
+      this.scrollDirection = offset < this.offset ? 'FRONT' : 'BEHIND';
     }
 
     this.offset = offset;
@@ -268,7 +301,7 @@ Virtual.prototype = {
     } else if (this.isBehind()) {
       this.handleScrollBehind();
     }
-  },
+  }
 
   handleScrollFront() {
     const scrolls = this.getScrollItems();
@@ -278,7 +311,7 @@ Virtual.prototype = {
 
     const start = Math.max(scrolls - this.options.buffer, 0);
     this.checkIfUpdate(start, this.getEndByStart(start));
-  },
+  }
 
   handleScrollBehind() {
     const scrolls = this.getScrollItems();
@@ -287,7 +320,7 @@ Virtual.prototype = {
     }
 
     this.checkIfUpdate(scrolls, this.getEndByStart(scrolls));
-  },
+  }
 
   getScrollItems() {
     const offset = this.offset - this.getScrollStartOffset();
@@ -318,9 +351,9 @@ Virtual.prototype = {
       }
     }
     return low > 0 ? --low : 0;
-  },
+  }
 
-  checkIfUpdate(start, end) {
+  checkIfUpdate(start: number, end: number) {
     const keeps = this.options.keeps;
     const total = this.options.uniqueKeys.length;
 
@@ -334,16 +367,16 @@ Virtual.prototype = {
     if (this.range.start !== start) {
       this.handleUpdate(start, end);
     }
-  },
+  }
 
-  handleUpdate(start, end) {
+  handleUpdate(start: number, end: number) {
     this.range.start = start;
     this.range.end = end;
     this.range.front = this.getFrontOffset();
     this.range.behind = this.getBehindOffset();
 
     this.options.onUpdate({ ...this.range });
-  },
+  }
 
   getFrontOffset() {
     if (this.isFixed()) {
@@ -351,7 +384,7 @@ Virtual.prototype = {
     } else {
       return this.getOffsetByIndex(this.range.start);
     }
-  },
+  }
 
   getBehindOffset() {
     const end = this.range.end;
@@ -362,9 +395,9 @@ Virtual.prototype = {
     }
 
     return (last - end) * this.getItemSize();
-  },
+  }
 
-  getOffsetByIndex(index) {
+  getOffsetByIndex(index: number) {
     if (!index) return 0;
 
     let offset = 0;
@@ -374,20 +407,20 @@ Virtual.prototype = {
     }
 
     return offset;
-  },
+  }
 
-  getEndByStart(start) {
+  getEndByStart(start: number) {
     return Math.min(start + this.options.keeps - 1, this.getLastIndex());
-  },
+  }
 
   getLastIndex() {
     const { uniqueKeys, keeps } = this.options;
     return uniqueKeys.length > 0 ? uniqueKeys.length - 1 : keeps - 1;
-  },
+  }
 
   getItemSize() {
     return this.isFixed() ? this.calcSize.fixed : this.options.size || this.calcSize.average;
-  },
+  }
 
   getScrollStartOffset() {
     let offset = 0;
@@ -399,15 +432,12 @@ Virtual.prototype = {
     }
 
     if (scroller && wrapper) {
-      const rect =
-        scroller instanceof Window
-          ? Dnd.utils.getRect(wrapper)
-          : Dnd.utils.getRect(wrapper, true, scroller);
+      const rect = elementIsDocumentOrWindow(scroller)
+        ? Dnd.utils.getRect(wrapper)
+        : Dnd.utils.getRect(wrapper, true, scroller);
       offset = this.offset + rect[rectDir[direction]];
     }
 
     return offset;
-  },
-};
-
-export { Virtual, VirtualAttrs };
+  }
+}
