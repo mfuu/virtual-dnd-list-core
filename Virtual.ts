@@ -1,14 +1,9 @@
 import Dnd from 'sortable-dnd';
-import { debounce, elementIsDocumentOrWindow, throttle } from './utils';
+import { debounce, throttle, elementIsDocumentOrWindow } from './utils';
 
-type CACLTYPE = 'INIT' | 'FIXED' | 'DYNAMIC';
+type SIZETYPE = 'INIT' | 'FIXED' | 'DYNAMIC';
 
 type DIRECTION = 'FRONT' | 'BEHIND' | 'STATIONARY';
-
-interface CalcSize {
-  fixed: number;
-  average: number;
-}
 
 export interface Range {
   start: number;
@@ -26,12 +21,12 @@ export interface ScrollEvent {
 
 export interface VirtualOptions {
   size?: number;
-  keeps?: number;
-  buffer?: number;
-  wrapper?: HTMLElement;
-  scroller?: any;
-  direction?: 'vertical' | 'horizontal';
-  uniqueKeys?: any[];
+  keeps: number;
+  buffer: number;
+  wrapper: HTMLElement;
+  scroller: any;
+  direction: 'vertical' | 'horizontal';
+  uniqueKeys: any[];
   debounceTime?: number;
   throttleTime?: number;
   onScroll: (event: ScrollEvent) => void;
@@ -72,11 +67,11 @@ export class Virtual {
   range: Range;
   offset: number;
   options: VirtualOptions;
-  calcType: CACLTYPE;
-  calcSize: CalcSize;
-  scrollEl: Element | HTMLElement;
-  scrollDirection: DIRECTION;
-
+  scrollEl: HTMLElement | Element;
+  direction: DIRECTION;
+  sizeType: SIZETYPE;
+  fixedSize: number;
+  averageSize: number;
   onScroll: () => void;
   constructor(options: VirtualOptions) {
     this.options = options;
@@ -98,11 +93,13 @@ export class Virtual {
     }
 
     this.sizes = new Map(); // store item size
+    this.sizeType = 'INIT';
+    this.fixedSize = 0;
+    this.averageSize = 0;
+
     this.range = { start: 0, end: 0, front: 0, behind: 0 };
     this.offset = 0;
-    this.calcType = 'INIT';
-    this.calcSize = { average: 0, fixed: 0 };
-    this.scrollDirection = 'STATIONARY';
+    this.direction = 'STATIONARY';
 
     this.updateScrollElement();
     this.updateOnScrollFunction();
@@ -111,30 +108,30 @@ export class Virtual {
   }
 
   isFront() {
-    return this.scrollDirection === 'FRONT';
+    return this.direction === 'FRONT';
   }
 
   isBehind() {
-    return this.scrollDirection === 'BEHIND';
+    return this.direction === 'BEHIND';
   }
 
   isFixed() {
-    return this.calcType === 'FIXED';
+    return this.sizeType === 'FIXED';
   }
 
   getSize(key: string | number) {
     return this.sizes.get(key) || this.getItemSize();
   }
 
-  getOffset() {
+  getOffset(): number {
     return this.scrollEl[scrollDir[this.options.direction]];
   }
 
-  getScrollSize() {
+  getScrollSize(): number {
     return this.scrollEl[scrollSize[this.options.direction]];
   }
 
-  getClientSize() {
+  getClientSize(): number {
     return this.scrollEl[offsetSize[this.options.direction]];
   }
 
@@ -205,44 +202,46 @@ export class Virtual {
 
     this.sizes.set(key, size);
 
-    if (this.calcType === 'INIT') {
-      this.calcType = 'FIXED';
-      this.calcSize.fixed = size;
-    } else if (this.isFixed() && this.calcSize.fixed !== size) {
-      this.calcType = 'DYNAMIC';
-      this.calcSize.fixed = 0;
+    if (this.sizeType === 'INIT') {
+      this.sizeType = 'FIXED';
+      this.fixedSize = size;
+    } else if (this.isFixed() && this.fixedSize !== size) {
+      this.sizeType = 'DYNAMIC';
+      this.fixedSize = 0;
     }
 
     // calculate the average size only once
-    if (this.calcType === 'DYNAMIC' && !this.calcSize.average) {
-      const critical = Math.min(this.options.keeps, this.options.uniqueKeys.length);
-      if (this.sizes.size === critical) {
-        const total = [...this.sizes.values()].reduce((t, i) => t + i, 0);
-        this.calcSize.average = Math.round(total / this.sizes.size);
-      }
+    if (
+      !this.averageSize &&
+      this.sizeType === 'DYNAMIC' &&
+      this.sizes.size === this.options.keeps
+    ) {
+      const total = [...this.sizes.values()].reduce((t, i) => t + i, 0);
+      this.averageSize = Math.round(total / this.sizes.size);
     }
   }
 
   addScrollEventListener() {
     if (this.options.scroller) {
-      Dnd.utils.on(this.options.scroller as any, 'scroll', this.onScroll);
+      Dnd.utils.on(this.options.scroller, 'scroll', this.onScroll);
     }
   }
 
   removeScrollEventListener() {
     if (this.options.scroller) {
-      Dnd.utils.off(this.options.scroller as any, 'scroll', this.onScroll);
+      Dnd.utils.off(this.options.scroller, 'scroll', this.onScroll);
     }
   }
 
-  enableScroll(enable) {
+  enableScroll(scrollable: boolean) {
     const { scroller } = this.options;
-    const event = enable ? Dnd.utils.off : Dnd.utils.on;
+    const eventFn = scrollable ? Dnd.utils.off : Dnd.utils.on;
     const wheelEvent = 'onwheel' in document.createElement('div') ? 'wheel' : 'mousewheel';
-    event(scroller, 'DOMMouseScroll', this.preventDefault);
-    event(scroller, wheelEvent, this.preventDefault);
-    event(scroller, 'touchmove', this.preventDefault);
-    event(scroller, 'keydown', this.preventDefaultForKeyDown);
+
+    eventFn(scroller, 'DOMMouseScroll', this.preventDefault);
+    eventFn(scroller, wheelEvent, this.preventDefault);
+    eventFn(scroller, 'touchmove', this.preventDefault);
+    eventFn(scroller, 'keydown', this.preventDefaultForKeyDown);
   }
 
   // ========================================= Properties =========================================
@@ -284,9 +283,9 @@ export class Virtual {
     const scrollSize = this.getScrollSize();
 
     if (offset === this.offset) {
-      this.scrollDirection = 'STATIONARY';
+      this.direction = 'STATIONARY';
     } else {
-      this.scrollDirection = offset < this.offset ? 'FRONT' : 'BEHIND';
+      this.direction = offset < this.offset ? 'FRONT' : 'BEHIND';
     }
 
     this.offset = offset;
@@ -294,7 +293,7 @@ export class Virtual {
     const top = this.isFront() && offset <= 0;
     const bottom = this.isBehind() && clientSize + offset >= scrollSize;
 
-    this.options.onScroll({ top, bottom, offset, direction: this.scrollDirection });
+    this.options.onScroll({ top, bottom, offset, direction: this.direction });
 
     if (this.isFront()) {
       this.handleScrollFront();
@@ -330,7 +329,7 @@ export class Virtual {
     }
 
     if (this.isFixed()) {
-      return Math.floor(offset / this.calcSize.fixed);
+      return Math.floor(offset / this.fixedSize);
     }
 
     let low = 0;
@@ -350,6 +349,7 @@ export class Virtual {
         high = middle - 1;
       }
     }
+
     return low > 0 ? --low : 0;
   }
 
@@ -380,7 +380,7 @@ export class Virtual {
 
   getFrontOffset() {
     if (this.isFixed()) {
-      return this.calcSize.fixed * this.range.start;
+      return this.fixedSize * this.range.start;
     } else {
       return this.getOffsetByIndex(this.range.start);
     }
@@ -391,14 +391,16 @@ export class Virtual {
     const last = this.getLastIndex();
 
     if (this.isFixed()) {
-      return (last - end) * this.calcSize.fixed;
+      return (last - end) * this.fixedSize;
     }
 
     return (last - end) * this.getItemSize();
   }
 
   getOffsetByIndex(index: number) {
-    if (!index) return 0;
+    if (!index) {
+      return 0;
+    }
 
     let offset = 0;
     for (let i = 0; i < index; i++) {
@@ -419,7 +421,7 @@ export class Virtual {
   }
 
   getItemSize() {
-    return this.isFixed() ? this.calcSize.fixed : this.options.size || this.calcSize.average;
+    return this.isFixed() ? this.fixedSize : this.options.size || this.averageSize;
   }
 
   getScrollStartOffset() {
