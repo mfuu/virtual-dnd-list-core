@@ -196,7 +196,7 @@ export class Virtual {
   }
 
   onItemResized(key, size: number) {
-    if (this.sizes.get(key) === size) {
+    if (!size || this.sizes.get(key) === size) {
       return;
     }
 
