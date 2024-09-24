@@ -40,6 +40,7 @@ export interface SortableOptions {
   ghostClass?: string;
   ghostStyle?: CSSStyleDeclaration;
   chosenClass?: string;
+  placeholderClass?: string;
   scrollSpeed?: ScrollSpeed;
   fallbackOnBody?: boolean;
   scrollThreshold?: number;
@@ -65,6 +66,7 @@ export const SortableAttrs = [
   'fallbackOnBody',
   'scrollThreshold',
   'delayOnTouchOnly',
+  'placeholderClass',
 ];
 
 export class Sortable {
@@ -120,7 +122,7 @@ export class Sortable {
   onDrop(event: SortableEvent) {
     const { item, key, index } = Dnd.get(event.from)?.option('store');
     const list = this.options.list;
-    const params = {
+    const params: DropEvent = {
       key,
       item,
       list,
@@ -132,7 +134,7 @@ export class Sortable {
     };
 
     if (!(event.from === event.to && event.node === event.target)) {
-      this.handleDropEvent(event, params, item, key, index, list);
+      this.handleDropEvent(event, params, index);
     }
 
     this.dispatchEvent('onDrop', params);
@@ -147,7 +149,7 @@ export class Sortable {
     this.reRendered = false;
   }
 
-  handleDropEvent(event: SortableEvent, params, item, key, index, list) {
+  handleDropEvent(event: SortableEvent, params: DropEvent, index: number) {
     const targetKey = event.target.getAttribute('data-key');
     let newIndex = -1;
     let oldIndex = index;
@@ -155,7 +157,7 @@ export class Sortable {
     // changes position in current list
     if (event.from === event.to) {
       // re-get the dragged element's index
-      oldIndex = this.getIndex(key);
+      oldIndex = this.getIndex(params.key);
       newIndex = this.getIndex(targetKey);
       if (
         (oldIndex < newIndex && event.relative === -1) ||
@@ -165,14 +167,14 @@ export class Sortable {
       }
 
       if (newIndex !== oldIndex) {
-        list.splice(oldIndex, 1);
-        list.splice(newIndex, 0, item);
+        params.list.splice(oldIndex, 1);
+        params.list.splice(newIndex, 0, params.item);
       }
     } else {
       // remove from
       if (event.from === this.el) {
-        oldIndex = this.getIndex(key);
-        list.splice(oldIndex, 1);
+        oldIndex = this.getIndex(params.key);
+        params.list.splice(oldIndex, 1);
       }
 
       // added to
@@ -181,17 +183,16 @@ export class Sortable {
         newIndex = this.getIndex(targetKey);
         if (event.relative === 0) {
           // added to last
-          newIndex = list.length;
+          newIndex = params.list.length;
         } else if (event.relative === 1) {
           newIndex += event.relative;
         }
 
-        list.splice(newIndex, 0, item);
+        params.list.splice(newIndex, 0, params.item);
       }
     }
 
     params.changed = event.from !== event.to || newIndex !== oldIndex;
-    params.list = list;
     params.oldIndex = oldIndex;
     params.newIndex = newIndex;
   }

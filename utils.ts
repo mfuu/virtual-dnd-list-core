@@ -13,6 +13,7 @@ export function throttle(fn: Function, wait: number) {
       }, wait);
     }
   };
+
   result['cancel'] = function () {
     if (timer) {
       clearTimeout(timer);
@@ -29,6 +30,7 @@ export function debounce(fn: Function, wait: number) {
     throttled['cancel']();
     throttled.apply(this, arguments);
   };
+
   result['cancel'] = function () {
     throttled['cancel']();
   };

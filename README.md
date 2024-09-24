@@ -2,7 +2,7 @@
 
 **Sortbale**
 ```js
-import Sortable from './index.js';
+import { Sortable } from './index';
 
 let sortable = new Sortable(elem, {
   list: [],
@@ -23,6 +23,7 @@ let sortable = new Sortable(elem, {
   fallbackOnBody: false,
   scrollThreshold: 55,
   delayOnTouchOnly: false,
+  placeholderClass: '',
   onDrag: (event) => {},
   onDrop: (event) => {},
 });
@@ -32,7 +33,7 @@ sortable.reRendered; // true: remove the dragged element on drop
 
 **Virtual**
 ```js
-import Virtual from './index.js';
+import { Virtual } from './index';
 
 let virtual = new Virtual({
   size: 0,

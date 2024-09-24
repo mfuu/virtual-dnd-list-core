@@ -24,7 +24,7 @@ export interface VirtualOptions {
   keeps: number;
   buffer: number;
   wrapper: HTMLElement;
-  scroller: any;
+  scroller: HTMLElement | Document | Window;
   direction: 'vertical' | 'horizontal';
   uniqueKeys: any[];
   debounceTime?: number;
@@ -41,26 +41,6 @@ export const VirtualAttrs = [
   'debounceTime',
   'throttleTime',
 ];
-
-const rectDir = {
-  vertical: 'top',
-  horizontal: 'left',
-};
-
-const scrollDir = {
-  vertical: 'scrollTop',
-  horizontal: 'scrollLeft',
-};
-
-const scrollSize = {
-  vertical: 'scrollHeight',
-  horizontal: 'scrollWidth',
-};
-
-const offsetSize = {
-  vertical: 'offsetHeight',
-  horizontal: 'offsetWidth',
-};
 
 export class Virtual {
   sizes: Map<any, number>;
@@ -107,6 +87,10 @@ export class Virtual {
     this.checkIfUpdate(0, options.keeps - 1);
   }
 
+  isFixed() {
+    return this.sizeType === 'FIXED';
+  }
+
   isFront() {
     return this.direction === 'FRONT';
   }
@@ -115,8 +99,8 @@ export class Virtual {
     return this.direction === 'BEHIND';
   }
 
-  isFixed() {
-    return this.sizeType === 'FIXED';
+  isHorizontal() {
+    return this.options.direction === 'horizontal';
   }
 
   getSize(key: string | number) {
@@ -124,19 +108,23 @@ export class Virtual {
   }
 
   getOffset(): number {
-    return this.scrollEl[scrollDir[this.options.direction]];
+    const offsetKey = this.isHorizontal() ? 'scrollLeft' : 'scrollTop';
+    return this.scrollEl[offsetKey];
   }
 
   getScrollSize(): number {
-    return this.scrollEl[scrollSize[this.options.direction]];
+    const sizeKey = this.isHorizontal() ? 'scrollWidth' : 'scrollHeight';
+    return this.scrollEl[sizeKey];
   }
 
   getClientSize(): number {
-    return this.scrollEl[offsetSize[this.options.direction]];
+    const sizeKey = this.isHorizontal() ? 'offsetWidth' : 'offsetHeight';
+    return this.scrollEl[sizeKey];
   }
 
   scrollToOffset(offset: number) {
-    this.scrollEl[scrollDir[this.options.direction]] = offset;
+    const offsetKey = this.isHorizontal() ? 'scrollLeft' : 'scrollTop';
+    this.scrollEl[offsetKey] = offset;
   }
 
   scrollToIndex(index: number) {
@@ -185,14 +173,14 @@ export class Virtual {
 
   updateRange(range?: Range) {
     if (range) {
-      this.handleUpdate(range.start, range.end);
+      this.handleUpdate(range.start);
       return;
     }
 
     let start = this.range.start;
     start = Math.max(start, 0);
 
-    this.handleUpdate(start, this.getEndByStart(start));
+    this.handleUpdate(start);
   }
 
   onItemResized(key, size: number) {
@@ -216,20 +204,24 @@ export class Virtual {
       this.sizeType === 'DYNAMIC' &&
       this.sizes.size === this.options.keeps
     ) {
-      const total = [...this.sizes.values()].reduce((t, i) => t + i, 0);
-      this.averageSize = Math.round(total / this.sizes.size);
+      this.updateAverageSize();
     }
+  }
+
+  updateAverageSize() {
+    const total = [...this.sizes.values()].reduce((t, i) => t + i, 0);
+    this.averageSize = Math.round(total / this.sizes.size);
   }
 
   addScrollEventListener() {
     if (this.options.scroller) {
-      Dnd.utils.on(this.options.scroller, 'scroll', this.onScroll);
+      Dnd.utils.on(this.options.scroller as HTMLElement, 'scroll', this.onScroll);
     }
   }
 
   removeScrollEventListener() {
     if (this.options.scroller) {
-      Dnd.utils.off(this.options.scroller, 'scroll', this.onScroll);
+      Dnd.utils.off(this.options.scroller as HTMLElement, 'scroll', this.onScroll);
     }
   }
 
@@ -238,10 +230,10 @@ export class Virtual {
     const eventFn = scrollable ? Dnd.utils.off : Dnd.utils.on;
     const wheelEvent = 'onwheel' in document.createElement('div') ? 'wheel' : 'mousewheel';
 
-    eventFn(scroller, 'DOMMouseScroll', this.preventDefault);
-    eventFn(scroller, wheelEvent, this.preventDefault);
-    eventFn(scroller, 'touchmove', this.preventDefault);
-    eventFn(scroller, 'keydown', this.preventDefaultForKeyDown);
+    eventFn(scroller as HTMLElement, 'DOMMouseScroll', this.preventDefault);
+    eventFn(scroller as HTMLElement, wheelEvent, this.preventDefault);
+    eventFn(scroller as HTMLElement, 'touchmove', this.preventDefault);
+    eventFn(scroller as HTMLElement, 'keydown', this.preventDefaultForKeyDown);
   }
 
   // ========================================= Properties =========================================
@@ -262,7 +254,7 @@ export class Virtual {
     if (elementIsDocumentOrWindow(scroller)) {
       this.scrollEl = document.scrollingElement || document.documentElement || document.body;
     } else {
-      this.scrollEl = scroller;
+      this.scrollEl = scroller as HTMLElement;
     }
   }
 
@@ -359,19 +351,18 @@ export class Virtual {
 
     if (total <= keeps) {
       start = 0;
-      end = this.getLastIndex();
     } else if (end - start < keeps - 1) {
       start = end - keeps + 1;
     }
 
     if (this.range.start !== start) {
-      this.handleUpdate(start, end);
+      this.handleUpdate(start);
     }
   }
 
-  handleUpdate(start: number, end: number) {
+  handleUpdate(start: number) {
     this.range.start = start;
-    this.range.end = end;
+    this.range.end = this.getEndByStart(start);
     this.range.front = this.getFrontOffset();
     this.range.behind = this.getBehindOffset();
 
@@ -425,19 +416,19 @@ export class Virtual {
   }
 
   getScrollStartOffset() {
-    let offset = 0;
-
     const { wrapper, scroller, direction } = this.options;
 
     if (scroller === wrapper) {
       return 0;
     }
 
+    let offset = 0;
     if (scroller && wrapper) {
+      const sizeKey = this.isHorizontal() ? 'left' : 'top';
       const rect = elementIsDocumentOrWindow(scroller)
         ? Dnd.utils.getRect(wrapper)
-        : Dnd.utils.getRect(wrapper, true, scroller);
-      offset = this.offset + rect[rectDir[direction]];
+        : Dnd.utils.getRect(wrapper, true, scroller as HTMLElement);
+      offset = this.offset + rect[sizeKey];
     }
 
     return offset;
