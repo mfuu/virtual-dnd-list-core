@@ -1,21 +1,21 @@
-import Dnd, { Group, SortableEvent } from 'sortable-dnd';
+import Dnd, { Group, SortableEvent, SortableOptions as DndOptions } from 'sortable-dnd';
 
 type EmitEvents = 'onDrag' | 'onDrop';
 
-export interface DragEvent {
-  item: any;
+export interface DragEvent<T> {
+  item: T;
   key: any;
   index?: number;
   event: SortableEvent;
 }
 
-export interface DropEvent {
+export interface DropEvent<T> {
   key: any;
-  item: any;
-  list: any[];
+  item: T;
+  list: T[];
   event: SortableEvent;
   changed: boolean;
-  oldList: any[];
+  oldList: T[];
   oldIndex: number;
   newIndex: number;
 }
@@ -25,8 +25,8 @@ export interface ScrollSpeed {
   y: number;
 }
 
-export interface SortableOptions {
-  list: any[];
+export interface SortableOptions<T> {
+  list: T[];
   uniqueKeys: any[];
   delay?: number;
   group?: string | Group;
@@ -45,8 +45,8 @@ export interface SortableOptions {
   fallbackOnBody?: boolean;
   scrollThreshold?: number;
   delayOnTouchOnly?: boolean;
-  onDrag: (event: DragEvent) => void;
-  onDrop: (event: DropEvent) => void;
+  onDrag: (event: DragEvent<T>) => void;
+  onDrop: (event: DropEvent<T>) => void;
 }
 
 export const SortableAttrs = [
@@ -69,12 +69,12 @@ export const SortableAttrs = [
   'placeholderClass',
 ];
 
-export class Sortable {
+export class Sortable<T> {
   el: HTMLElement;
-  options: SortableOptions;
+  options: SortableOptions<T>;
   sortable: Dnd;
   reRendered: boolean;
-  constructor(el: HTMLElement, options: SortableOptions) {
+  constructor(el: HTMLElement, options: SortableOptions<T>) {
     this.el = el;
     this.options = options;
     this.reRendered = false;
@@ -87,10 +87,10 @@ export class Sortable {
     this.reRendered = false;
   }
 
-  option(key, value) {
+  option<K extends keyof SortableOptions<T>>(key: K, value: SortableOptions<T>[K]) {
     this.options[key] = value;
     if (SortableAttrs.includes(key)) {
-      this.sortable.option(key, value);
+      this.sortable.option(key as keyof DndOptions, value);
     }
   }
 
@@ -122,7 +122,7 @@ export class Sortable {
   onDrop(event: SortableEvent) {
     const { item, key, index } = Dnd.get(event.from)?.option('store');
     const list = this.options.list;
-    const params: DropEvent = {
+    const params: DropEvent<T> = {
       key,
       item,
       list,
@@ -149,7 +149,7 @@ export class Sortable {
     this.reRendered = false;
   }
 
-  handleDropEvent(event: SortableEvent, params: DropEvent, index: number) {
+  handleDropEvent(event: SortableEvent, params: DropEvent<T>, index: number) {
     const targetKey = event.target.getAttribute('data-key');
     let newIndex = -1;
     let oldIndex = index;

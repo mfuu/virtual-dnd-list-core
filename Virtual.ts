@@ -19,14 +19,14 @@ export interface ScrollEvent {
   direction: DIRECTION;
 }
 
-export interface VirtualOptions {
+export interface VirtualOptions<T> {
   size?: number;
-  keeps: number;
+  keeps?: number;
   buffer: number;
   wrapper: HTMLElement;
-  scroller: HTMLElement | Document | Window;
-  direction: 'vertical' | 'horizontal';
-  uniqueKeys: any[];
+  scroller?: HTMLElement | Document | Window;
+  direction?: 'vertical' | 'horizontal';
+  uniqueKeys: T[];
   debounceTime?: number;
   throttleTime?: number;
   onScroll: (event: ScrollEvent) => void;
@@ -42,18 +42,18 @@ export const VirtualAttrs = [
   'throttleTime',
 ];
 
-export class Virtual {
-  sizes: Map<any, number>;
+export class Virtual<T> {
+  sizes: Map<T, number>;
   range: Range;
   offset: number;
-  options: VirtualOptions;
+  options: VirtualOptions<T>;
   scrollEl: HTMLElement | Element;
   direction: DIRECTION;
   sizeType: SIZETYPE;
   fixedSize: number;
   averageSize: number;
   onScroll: () => void;
-  constructor(options: VirtualOptions) {
+  constructor(options: VirtualOptions<T>) {
     this.options = options;
 
     const defaults = {
@@ -84,7 +84,7 @@ export class Virtual {
     this.updateScrollElement();
     this.updateOnScrollFunction();
     this.addScrollEventListener();
-    this.checkIfUpdate(0, options.keeps - 1);
+    this.checkIfUpdate(0, options.keeps! - 1);
   }
 
   isFixed() {
@@ -103,7 +103,7 @@ export class Virtual {
     return this.options.direction === 'horizontal';
   }
 
-  getSize(key: string | number) {
+  getSize(key: T) {
     return this.sizes.get(key) || this.getItemSize();
   }
 
@@ -152,20 +152,20 @@ export class Virtual {
     }, 5);
   }
 
-  option(key, value) {
+  option<K extends keyof VirtualOptions<T>>(key: K, value: VirtualOptions<T>[K]) {
     const oldValue = this.options[key];
 
     this.options[key] = value;
 
     if (key === 'uniqueKeys') {
       this.sizes.forEach((v, k) => {
-        if (!value.includes(k)) {
+        if (!(value as T[]).includes(k)) {
           this.sizes.delete(k);
         }
       });
     }
     if (key === 'scroller') {
-      oldValue && Dnd.utils.off(oldValue, 'scroll', this.onScroll);
+      oldValue && Dnd.utils.off(oldValue as HTMLElement, 'scroll', this.onScroll);
       this.updateScrollElement();
       this.addScrollEventListener();
     }
@@ -183,7 +183,7 @@ export class Virtual {
     this.handleUpdate(start);
   }
 
-  onItemResized(key, size: number) {
+  onItemResized(key: T, size: number) {
     if (!size || this.sizes.get(key) === size) {
       return;
     }
@@ -237,11 +237,11 @@ export class Virtual {
   }
 
   // ========================================= Properties =========================================
-  preventDefault(e) {
+  preventDefault(e: Event) {
     e.preventDefault();
   }
 
-  preventDefaultForKeyDown(e) {
+  preventDefaultForKeyDown(e: KeyboardEvent) {
     const keys = { 37: 1, 38: 1, 39: 1, 40: 1 };
     if (keys[e.keyCode]) {
       this.preventDefault(e);
@@ -346,7 +346,7 @@ export class Virtual {
   }
 
   checkIfUpdate(start: number, end: number) {
-    const keeps = this.options.keeps;
+    const keeps = this.options.keeps!;
     const total = this.options.uniqueKeys.length;
 
     if (total <= keeps) {
@@ -403,12 +403,12 @@ export class Virtual {
   }
 
   getEndByStart(start: number) {
-    return Math.min(start + this.options.keeps - 1, this.getLastIndex());
+    return Math.min(start + this.options.keeps! - 1, this.getLastIndex());
   }
 
   getLastIndex() {
     const { uniqueKeys, keeps } = this.options;
-    return uniqueKeys.length > 0 ? uniqueKeys.length - 1 : keeps - 1;
+    return uniqueKeys.length > 0 ? uniqueKeys.length - 1 : keeps! - 1;
   }
 
   getItemSize() {
@@ -416,7 +416,7 @@ export class Virtual {
   }
 
   getScrollStartOffset() {
-    const { wrapper, scroller, direction } = this.options;
+    const { wrapper, scroller } = this.options;
 
     if (scroller === wrapper) {
       return 0;
@@ -428,6 +428,7 @@ export class Virtual {
       const rect = elementIsDocumentOrWindow(scroller)
         ? Dnd.utils.getRect(wrapper)
         : Dnd.utils.getRect(wrapper, true, scroller as HTMLElement);
+
       offset = this.offset + rect[sizeKey];
     }
 
