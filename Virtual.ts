@@ -158,7 +158,7 @@ export class Virtual<T> {
     this.options[key] = value;
 
     if (key === 'uniqueKeys') {
-      this.sizes.forEach((v, k) => {
+      this.sizes.forEach((_v, k) => {
         if (!(value as T[]).includes(k)) {
           this.sizes.delete(k);
         }

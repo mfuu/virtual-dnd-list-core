@@ -1,4 +1,4 @@
-import Dnd, { Group, SortableEvent, SortableOptions as DndOptions } from 'sortable-dnd';
+import Dnd, { Group, ScrollSpeed, SortableEvent, SortableOptions as DndOptions } from 'sortable-dnd';
 
 type EmitEvents = 'onDrag' | 'onDrop';
 
@@ -18,11 +18,6 @@ export interface DropEvent<T> {
   oldList: T[];
   oldIndex: number;
   newIndex: number;
-}
-
-export interface ScrollSpeed {
-  x: number;
-  y: number;
 }
 
 export interface SortableOptions<T> {
