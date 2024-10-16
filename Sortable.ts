@@ -1,6 +1,6 @@
 import Dnd, { Group, ScrollSpeed, SortableEvent, SortableOptions as DndOptions } from 'sortable-dnd';
 
-type EmitEvents = 'onDrag' | 'onDrop';
+type EmitEvents = 'onDrag' | 'onDrop' | 'onChoose' | 'onUnchoose';
 
 export interface DragEvent<T> {
   item: T;
@@ -40,8 +40,10 @@ export interface SortableOptions<T> {
   fallbackOnBody?: boolean;
   scrollThreshold?: number;
   delayOnTouchOnly?: boolean;
-  onDrag: (event: DragEvent<T>) => void;
-  onDrop: (event: DropEvent<T>) => void;
+  onDrag?: (event: DragEvent<T>) => void;
+  onDrop?: (event: DropEvent<T>) => void;
+  onChoose?: (event: SortableEvent) => void;
+  onUnchoose?: (event: SortableEvent) => void;
 }
 
 export const SortableAttrs = [
@@ -101,7 +103,17 @@ export class Sortable<T> {
       swapOnDrop: (event) => event.from === event.to,
       onDrag: (event) => this.onDrag(event),
       onDrop: (event) => this.onDrop(event),
+      onChoose: (event) => this.onChoose(event),
+      onUnchoose: (event) => this.onUnchoose(event),
     });
+  }
+
+  onChoose(event: SortableEvent) {
+    this.dispatchEvent('onChoose', event);
+  }
+
+  onUnchoose(event: SortableEvent) {
+    this.dispatchEvent('onUnchoose', event);
   }
 
   onDrag(event: SortableEvent) {
