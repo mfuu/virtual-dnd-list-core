@@ -283,7 +283,7 @@ export class Virtual<T> {
     this.offset = offset;
 
     const top = this.isFront() && offset <= 0;
-    const bottom = this.isBehind() && clientSize + offset >= scrollSize;
+    const bottom = this.isBehind() && clientSize + offset + 1 >= scrollSize;
 
     this.options.onScroll({ top, bottom, offset, direction: this.direction });
 
