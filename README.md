@@ -5,7 +5,7 @@
 ```js
 import { Sortable } from './index'
 
-let sortable = new Sortable(elem, {
+const sortable = new Sortable(elem, {
   list: [],
   uniqueKeys: [],
   delay: 0,
@@ -39,7 +39,7 @@ sortable.reRendered // true: remove the dragged element on drop
 ```js
 import { Virtual } from './index'
 
-let virtual = new Virtual({
+const virtual = new Virtual({
   size: 0,
   keeps: 0,
   buffer: 0,
