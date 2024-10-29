@@ -100,8 +100,8 @@ export class Sortable<T> {
     this.sortable = new Dnd(this.el, {
       ...props,
       emptyInsertThreshold: 0,
-      swapOnDrop: false,
-      removeCloneOnDrop: false,
+      swapOnDrop: (event) => event.from === event.to,
+      removeCloneOnDrop: (event) => event.from === event.to,
       onDrag: (event) => this.onDrag(event),
       onDrop: (event) => this.onDrop(event),
       onChoose: (event) => this.onChoose(event),
@@ -150,8 +150,10 @@ export class Sortable<T> {
     if (event.from === this.el && this.reRendered) {
       Dnd.dragged?.remove();
     }
-
-    Dnd.clone?.remove();
+    
+    if (event.from !== event.to) {
+      Dnd.clone?.remove();
+    }
 
     this.reRendered = false;
   }
