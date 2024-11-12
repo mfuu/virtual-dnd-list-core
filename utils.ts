@@ -38,7 +38,11 @@ export function debounce(fn: Function, wait: number) {
   return result;
 }
 
-export function getDataKey(item, dataKey: string | string[]) {
+export function isSameValue(a: string | number, b: string | number) {
+  return a == b;
+}
+
+export function getDataKey(item, dataKey: string | string[]): string | number {
   return (
     !Array.isArray(dataKey) ? dataKey.replace(/\[/g, '.').replace(/\]/g, '.').split('.') : dataKey
   ).reduce((o, k) => (o || {})[k], item);

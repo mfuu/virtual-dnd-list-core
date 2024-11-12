@@ -19,14 +19,14 @@ export interface ScrollEvent {
   direction: DIRECTION;
 }
 
-export interface VirtualOptions<T> {
+export interface VirtualOptions {
   size?: number;
   keeps?: number;
   buffer: number;
   wrapper: HTMLElement;
   scroller?: HTMLElement | Document | Window;
   direction?: 'vertical' | 'horizontal';
-  uniqueKeys: T[];
+  uniqueKeys: Array<string | number>;
   debounceTime?: number;
   throttleTime?: number;
   onScroll: (event: ScrollEvent) => void;
@@ -42,18 +42,18 @@ export const VirtualAttrs = [
   'throttleTime',
 ];
 
-export class Virtual<T> {
-  sizes: Map<T, number>;
+export class Virtual {
+  sizes: Map<string | number, number>;
   range: Range;
   offset: number;
-  options: VirtualOptions<T>;
+  options: VirtualOptions;
   scrollEl: HTMLElement | Element;
   direction: DIRECTION;
   sizeType: SIZETYPE;
   fixedSize: number;
   averageSize: number;
   onScroll: () => void;
-  constructor(options: VirtualOptions<T>) {
+  constructor(options: VirtualOptions) {
     this.options = options;
 
     const defaults = {
@@ -103,7 +103,7 @@ export class Virtual<T> {
     return this.options.direction === 'horizontal';
   }
 
-  getSize(key: T) {
+  getSize(key: string | number) {
     return this.sizes.get(key) || this.getItemSize();
   }
 
@@ -152,14 +152,14 @@ export class Virtual<T> {
     }, 5);
   }
 
-  option<K extends keyof VirtualOptions<T>>(key: K, value: VirtualOptions<T>[K]) {
+  option<K extends keyof VirtualOptions>(key: K, value: VirtualOptions[K]) {
     const oldValue = this.options[key];
 
     this.options[key] = value;
 
     if (key === 'uniqueKeys') {
       this.sizes.forEach((_v, k) => {
-        if (!(value as T[]).includes(k)) {
+        if (!(value as Array<string | number>).includes(k)) {
           this.sizes.delete(k);
         }
       });
@@ -183,7 +183,7 @@ export class Virtual<T> {
     this.handleUpdate(start);
   }
 
-  onItemResized(key: T, size: number) {
+  onItemResized(key: string | number, size: number) {
     if (!size || this.sizes.get(key) === size) {
       return;
     }

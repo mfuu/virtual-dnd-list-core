@@ -1,16 +1,17 @@
 import Dnd, { Group, ScrollSpeed, SortableEvent, SortableOptions as DndOptions } from 'sortable-dnd';
+import { isSameValue } from './utils';
 
 type EmitEvents = 'onDrag' | 'onDrop' | 'onChoose' | 'onUnchoose';
 
 export interface DragEvent<T> {
   item: T;
-  key: any;
+  key: string | number;
   index?: number;
   event: SortableEvent;
 }
 
 export interface DropEvent<T> {
-  key: any;
+  key: string | number;
   item: T;
   list: T[];
   event: SortableEvent;
@@ -22,7 +23,7 @@ export interface DropEvent<T> {
 
 export interface SortableOptions<T> {
   list: T[];
-  uniqueKeys: any[];
+  uniqueKeys: Array<string | number>;
   delay?: number;
   group?: string | Group;
   handle?: string;
@@ -33,7 +34,7 @@ export interface SortableOptions<T> {
   animation?: number;
   autoScroll?: boolean;
   ghostClass?: string;
-  ghostStyle?: CSSStyleDeclaration;
+  ghostStyle?: object;
   chosenClass?: string;
   placeholderClass?: string;
   scrollSpeed?: ScrollSpeed;
@@ -118,9 +119,10 @@ export class Sortable<T> {
   }
 
   onDrag(event: SortableEvent) {
-    const key = event.node.getAttribute('data-key');
-    const index = this.getIndex(key);
+    const dataKey = event.node.getAttribute('data-key');
+    const index = this.getIndex(dataKey);
     const item = this.options.list[index];
+    const key = this.options.uniqueKeys[index];
 
     // store the dragged item
     this.sortable.option('store', { item, key, index });
@@ -150,7 +152,7 @@ export class Sortable<T> {
     if (event.from === this.el && this.reRendered) {
       Dnd.dragged?.remove();
     }
-    
+
     if (event.from !== event.to) {
       Dnd.clone?.remove();
     }
@@ -206,8 +208,20 @@ export class Sortable<T> {
     params.newIndex = newIndex;
   }
 
-  getIndex(key) {
-    return this.options.uniqueKeys.indexOf(key);
+  getIndex(key: string | number | null) {
+    if (key === null || key === undefined) {
+      return -1;
+    }
+
+    const { uniqueKeys } = this.options;
+
+    for (let i = 0, len = uniqueKeys.length; i < len; i++) {
+      if (isSameValue(uniqueKeys[i], key)) {
+        return i;
+      }
+    }
+
+    return -1;
   }
 
   dispatchEvent(name: EmitEvents, params) {
