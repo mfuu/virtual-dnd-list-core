@@ -23,7 +23,7 @@ export interface DropEvent<T> {
 
 export interface SortableOptions<T> {
   list: T[];
-  uniqueKeys: Array<string | number>;
+  uniqueKeys: (string | number)[];
   delay?: number;
   group?: string | Group;
   handle?: string;
@@ -68,10 +68,11 @@ export const SortableAttrs = [
 ];
 
 export class Sortable<T> {
-  el: HTMLElement;
-  options: SortableOptions<T>;
-  sortable: Dnd;
-  reRendered: boolean;
+  public el: HTMLElement;
+  public options: SortableOptions<T>;
+  public sortable: Dnd;
+  public reRendered: boolean;
+
   constructor(el: HTMLElement, options: SortableOptions<T>) {
     this.el = el;
     this.options = options;
@@ -80,19 +81,19 @@ export class Sortable<T> {
     this.installSortable();
   }
 
-  destroy() {
+  public destroy() {
     this.sortable.destroy();
     this.reRendered = false;
   }
 
-  option<K extends keyof SortableOptions<T>>(key: K, value: SortableOptions<T>[K]) {
+  public option<K extends keyof SortableOptions<T>>(key: K, value: SortableOptions<T>[K]) {
     this.options[key] = value;
     if (SortableAttrs.includes(key)) {
       this.sortable.option(key as keyof DndOptions, value);
     }
   }
 
-  installSortable() {
+  private installSortable() {
     const props = SortableAttrs.reduce((res, key) => {
       res[key] = this.options[key];
       return res;
@@ -110,15 +111,15 @@ export class Sortable<T> {
     });
   }
 
-  onChoose(event: SortableEvent) {
+  private onChoose(event: SortableEvent) {
     this.dispatchEvent('onChoose', event);
   }
 
-  onUnchoose(event: SortableEvent) {
+  private onUnchoose(event: SortableEvent) {
     this.dispatchEvent('onUnchoose', event);
   }
 
-  onDrag(event: SortableEvent) {
+  private onDrag(event: SortableEvent) {
     const dataKey = event.node.getAttribute('data-key');
     const index = this.getIndex(dataKey);
     const item = this.options.list[index];
@@ -129,7 +130,7 @@ export class Sortable<T> {
     this.dispatchEvent('onDrag', { item, key, index, event });
   }
 
-  onDrop(event: SortableEvent) {
+  private onDrop(event: SortableEvent) {
     const { item, key, index } = Dnd.get(event.from)?.option('store');
     const list = this.options.list;
     const params: DropEvent<T> = {
@@ -160,7 +161,7 @@ export class Sortable<T> {
     this.reRendered = false;
   }
 
-  handleDropEvent(event: SortableEvent, params: DropEvent<T>, index: number) {
+  private handleDropEvent(event: SortableEvent, params: DropEvent<T>, index: number) {
     const targetKey = event.target.getAttribute('data-key');
     let newIndex = -1;
     let oldIndex = index;
@@ -208,7 +209,7 @@ export class Sortable<T> {
     params.newIndex = newIndex;
   }
 
-  getIndex(key: string | number | null) {
+  private getIndex(key: string | number | null) {
     if (key === null || key === undefined) {
       return -1;
     }
@@ -224,7 +225,7 @@ export class Sortable<T> {
     return -1;
   }
 
-  dispatchEvent(name: EmitEvents, params) {
+  private dispatchEvent(name: EmitEvents, params) {
     const cb = this.options[name];
     cb && cb(params);
   }
