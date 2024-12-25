@@ -3,7 +3,7 @@
 **Sortbale**
 
 ```js
-import { Sortable } from './index'
+import { Sortable } from './index';
 
 let sortable = new Sortable(elem, {
   list: [],
@@ -29,15 +29,15 @@ let sortable = new Sortable(elem, {
   onDrop: (event) => {},
   onChoose: (event) => {},
   onUnchoose: (event) => {},
-})
+});
 
-sortable.reRendered // true: remove the dragged element on drop
+sortable.rangeChanged; // virtual list range changed
 ```
 
 **Virtual**
 
 ```js
-import { Virtual } from './index'
+import { Virtual } from './index';
 
 let virtual = new Virtual({
   size: 0,
@@ -51,5 +51,5 @@ let virtual = new Virtual({
   throttleTime: 0,
   onScroll: (event) => {},
   onUpdate: (range) => {},
-})
+});
 ```

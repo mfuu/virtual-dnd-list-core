@@ -71,19 +71,19 @@ export class Sortable<T> {
   public el: HTMLElement;
   public options: SortableOptions<T>;
   public sortable: Dnd;
-  public reRendered: boolean;
+  public rangeChanged: boolean;
 
   constructor(el: HTMLElement, options: SortableOptions<T>) {
     this.el = el;
     this.options = options;
-    this.reRendered = false;
+    this.rangeChanged = false;
 
     this.installSortable();
   }
 
   public destroy() {
     this.sortable.destroy();
-    this.reRendered = false;
+    this.rangeChanged = false;
   }
 
   public option<K extends keyof SortableOptions<T>>(key: K, value: SortableOptions<T>[K]) {
@@ -150,7 +150,7 @@ export class Sortable<T> {
 
     this.dispatchEvent('onDrop', params);
 
-    if (event.from === this.el && this.reRendered) {
+    if (event.from === this.el && this.rangeChanged) {
       Dnd.dragged?.remove();
     }
 
@@ -158,7 +158,7 @@ export class Sortable<T> {
       Dnd.clone?.remove();
     }
 
-    this.reRendered = false;
+    this.rangeChanged = false;
   }
 
   private handleDropEvent(event: SortableEvent, params: DropEvent<T>, index: number) {

@@ -10,7 +10,6 @@ export interface Range {
   end: number;
   front: number;
   behind: number;
-  total: number;
 }
 
 export interface ScrollEvent {
@@ -79,7 +78,7 @@ export class Virtual {
     this.fixedSize = 0;
     this.averageSize = 0;
 
-    this.range = { start: 0, end: 0, front: 0, behind: 0, total: 0 };
+    this.range = { start: 0, end: 0, front: 0, behind: 0 };
     this.offset = 0;
     this.direction = 'STATIONARY';
 
@@ -238,7 +237,6 @@ export class Virtual {
     eventFn(scroller as HTMLElement, 'keydown', this.preventDefaultForKeyDown);
   }
 
-  // ========================================= Properties =========================================
   private preventDefault(e: Event) {
     e.preventDefault();
   }
@@ -368,17 +366,8 @@ export class Virtual {
     this.range.end = this.getEndByStart(start);
     this.range.front = this.getFrontOffset();
     this.range.behind = this.getBehindOffset();
-    this.range.total = this.getTotalOffset();
 
     this.options.onUpdate({ ...this.range });
-  }
-
-  private getTotalOffset() {
-    let offset = this.range.front + this.range.behind;
-
-    offset += this.getOffsetByRange(this.range.start, this.range.end + 1);
-
-    return offset;
   }
 
   private getFrontOffset() {
