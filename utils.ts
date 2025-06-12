@@ -39,7 +39,7 @@ export function debounce(fn: Function, wait: number) {
 }
 
 export function isSameValue(a: string | number, b: string | number) {
-  return a == b;
+  return a === 0 ? a === b : a == b;
 }
 
 export function getDataKey(item, dataKey: string | string[]): string | number {
