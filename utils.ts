@@ -1,7 +1,9 @@
-export function throttle(fn: Function, wait: number) {
+import { Func } from './types';
+
+export function throttle(fn: Func, wait: number) {
   let timer: NodeJS.Timeout | null;
 
-  const result = function (...args) {
+  const result = function (this: unknown, ...args: any[]) {
     if (timer) return;
 
     if (wait <= 0) {
@@ -24,11 +26,11 @@ export function throttle(fn: Function, wait: number) {
   return result;
 }
 
-export function debounce(fn: Function, wait: number) {
+export function debounce(fn: Func, wait: number) {
   const throttled = throttle(fn, wait);
-  const result = function () {
+  const result = function (this: unknown, ...args: any[]) {
     throttled['cancel']();
-    throttled.apply(this, arguments);
+    throttled.apply(this, args);
   };
 
   result['cancel'] = function () {
@@ -38,16 +40,26 @@ export function debounce(fn: Function, wait: number) {
   return result;
 }
 
-export function isSameValue(a: string | number, b: string | number) {
-  return a === 0 ? a === b : a == b;
+export function isEqual(a: any, b: any) {
+  // 0 & -0
+  if (a === 0 && b === 0) {
+    return 1 / a === 1 / b;
+  }
+
+  // NaN
+  if (Number.isNaN(a) && Number.isNaN(b)) {
+    return true;
+  }
+
+  return a == b;
 }
 
-export function getDataKey(item, dataKey: string | string[]): string | number {
+export function getDataKey(item: any, dataKey: string | string[]) {
   return (
     !Array.isArray(dataKey) ? dataKey.replace(/\[/g, '.').replace(/\]/g, '.').split('.') : dataKey
   ).reduce((o, k) => (o || {})[k], item);
 }
 
-export function elementIsDocumentOrWindow(element) {
+export function elementIsDocumentOrWindow(element: HTMLElement | Document | Window) {
   return (element instanceof Document && element.nodeType === 9) || element instanceof Window;
 }

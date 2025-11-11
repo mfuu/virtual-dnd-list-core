@@ -1,13 +1,11 @@
 # virtual-dnd-list-core
 
-**Sortbale**
+## Usage
 
 ```js
-import { Sortable } from './index';
+import { VirtualSortable } from './index';
 
-let sortable = new Sortable(elem, {
-  list: [],
-  uniqueKeys: [],
+let sortable = new VirtualSortable(elem, {
   delay: 0,
   group: '',
   handle: '',
@@ -17,29 +15,16 @@ let sortable = new Sortable(elem, {
   draggable: '',
   animation: 150,
   autoScroll: true,
+  scrollSpeed: { x: 10, y: 10 },
+  appendToBody: false,
+  scrollThreshold: 55,
+  delayOnTouchOnly: false,
+  dropOnAnimationEnd: true,
   ghostClass: '',
   ghostStyle: {},
   chosenClass: '',
-  scrollSpeed: { x: 10, y: 10 },
-  fallbackOnBody: false,
-  scrollThreshold: 55,
-  delayOnTouchOnly: false,
   placeholderClass: '',
-  onDrag: (event) => {},
-  onDrop: (event) => {},
-  onChoose: (event) => {},
-  onUnchoose: (event) => {},
-});
 
-sortable.rangeChanged; // virtual list range changed
-```
-
-**Virtual**
-
-```js
-import { Virtual } from './index';
-
-let virtual = new Virtual({
   size: 0,
   keeps: 0,
   buffer: 0,
@@ -49,7 +34,10 @@ let virtual = new Virtual({
   uniqueKeys: [],
   debounceTime: 0,
   throttleTime: 0,
+
+  onDrag: (event) => {},
+  onDrop: (event) => {},
   onScroll: (event) => {},
-  onUpdate: (range) => {},
+  onUpdate: (range, changed) => {},
 });
 ```

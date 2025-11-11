@@ -1,52 +1,12 @@
-import Dnd from 'sortable-dnd';
+import Sortable from 'sortable-dnd';
 import { debounce, throttle, elementIsDocumentOrWindow } from './utils';
+import { DIRECTION, Range, SIZETYPE, VirtualOptions } from './types';
 
-type SIZETYPE = 'INIT' | 'FIXED' | 'DYNAMIC';
-
-type DIRECTION = 'FRONT' | 'BEHIND' | 'STATIONARY';
-
-export interface Range {
-  start: number;
-  end: number;
-  front: number;
-  behind: number;
-}
-
-export interface ScrollEvent {
-  top: boolean;
-  bottom: boolean;
-  offset: number;
-  direction: DIRECTION;
-}
-
-export interface VirtualOptions {
-  size?: number;
-  keeps?: number;
-  buffer: number;
-  wrapper: HTMLElement;
-  scroller?: HTMLElement | Document | Window;
-  direction?: 'vertical' | 'horizontal';
-  uniqueKeys: (string | number)[];
-  debounceTime?: number;
-  throttleTime?: number;
-  onScroll: (event: ScrollEvent) => void;
-  onUpdate: (range: Range) => void;
-}
-
-export const VirtualAttrs = [
-  'size',
-  'keeps',
-  'scroller',
-  'direction',
-  'debounceTime',
-  'throttleTime',
-];
-
-export class Virtual {
-  public sizes: Map<string | number, number>;
+export class Virtual<T> {
+  public sizes: Map<T, number>;
   public range: Range;
   public offset: number;
-  public options: VirtualOptions;
+  public options: VirtualOptions<T>;
   public scrollEl: HTMLElement;
   public direction: DIRECTION;
   public sizeType: SIZETYPE;
@@ -54,7 +14,7 @@ export class Virtual {
   public averageSize: number;
   private onScroll: () => void;
 
-  constructor(options: VirtualOptions) {
+  constructor(options: VirtualOptions<T>) {
     this.options = options;
 
     const defaults = {
@@ -104,7 +64,7 @@ export class Virtual {
     return this.options.direction === 'horizontal';
   }
 
-  public getSize(key: string | number) {
+  public getSize(key: T) {
     return this.sizes.get(key) || this.getItemSize();
   }
 
@@ -153,20 +113,20 @@ export class Virtual {
     }, 5);
   }
 
-  public option<K extends keyof VirtualOptions>(key: K, value: VirtualOptions[K]) {
+  public option<K extends keyof VirtualOptions<T>>(key: K, value: VirtualOptions<T>[K]) {
     const oldValue = this.options[key];
 
     this.options[key] = value;
 
     if (key === 'uniqueKeys') {
       this.sizes.forEach((_v, k) => {
-        if (!(value as (string | number)[]).includes(k)) {
+        if (!(value as T[]).includes(k)) {
           this.sizes.delete(k);
         }
       });
     }
     if (key === 'scroller') {
-      oldValue && Dnd.utils.off(oldValue as HTMLElement, 'scroll', this.onScroll);
+      oldValue && Sortable.utils.off(oldValue as HTMLElement, 'scroll', this.onScroll);
       this.updateScrollElement();
       this.addScrollEventListener();
     }
@@ -184,7 +144,7 @@ export class Virtual {
     this.handleUpdate(start);
   }
 
-  public onItemResized(key: string | number, size: number) {
+  public updateItemSize(key: T, size: number) {
     if (!size || this.sizes.get(key) === size) {
       return;
     }
@@ -216,25 +176,25 @@ export class Virtual {
 
   public addScrollEventListener() {
     if (this.options.scroller) {
-      Dnd.utils.on(this.options.scroller as HTMLElement, 'scroll', this.onScroll);
+      Sortable.utils.on(this.options.scroller as HTMLElement, 'scroll', this.onScroll);
     }
   }
 
   public removeScrollEventListener() {
     if (this.options.scroller) {
-      Dnd.utils.off(this.options.scroller as HTMLElement, 'scroll', this.onScroll);
+      Sortable.utils.off(this.options.scroller as HTMLElement, 'scroll', this.onScroll);
     }
   }
 
   public enableScroll(scrollable: boolean) {
-    const { scroller } = this.options;
-    const eventFn = scrollable ? Dnd.utils.off : Dnd.utils.on;
+    const scroller = this.options.scroller as HTMLElement;
+    const eventFn = scrollable ? Sortable.utils.off : Sortable.utils.on;
     const wheelEvent = 'onwheel' in document.createElement('div') ? 'wheel' : 'mousewheel';
 
-    eventFn(scroller as HTMLElement, 'DOMMouseScroll', this.preventDefault);
-    eventFn(scroller as HTMLElement, wheelEvent, this.preventDefault);
-    eventFn(scroller as HTMLElement, 'touchmove', this.preventDefault);
-    eventFn(scroller as HTMLElement, 'keydown', this.preventDefaultForKeyDown);
+    eventFn(scroller, 'DOMMouseScroll', this.preventDefault);
+    eventFn(scroller, wheelEvent, this.preventDefault);
+    eventFn(scroller, 'touchmove', this.preventDefault);
+    eventFn(scroller, 'keydown', this.preventDefaultForKeyDown);
   }
 
   private preventDefault(e: Event) {
@@ -362,12 +322,14 @@ export class Virtual {
   }
 
   private handleUpdate(start: number) {
+    const rangeChanged = this.range.start !== start;
+
     this.range.start = start;
     this.range.end = this.getEndByStart(start);
     this.range.front = this.getFrontOffset();
     this.range.behind = this.getBehindOffset();
 
-    this.options.onUpdate({ ...this.range });
+    this.options.onUpdate({ ...this.range }, rangeChanged);
   }
 
   private getFrontOffset() {
@@ -427,8 +389,8 @@ export class Virtual {
     if (scroller && wrapper) {
       const offsetKey = this.isHorizontal() ? 'left' : 'top';
       const rect = elementIsDocumentOrWindow(scroller)
-        ? Dnd.utils.getRect(wrapper)
-        : Dnd.utils.getRect(wrapper, true, scroller as HTMLElement);
+        ? Sortable.utils.getRect(wrapper)
+        : Sortable.utils.getRect(wrapper, true, scroller as HTMLElement);
 
       offset = this.offset + rect[offsetKey];
     }
