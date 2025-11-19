@@ -144,7 +144,7 @@ class VirtualSortable<T> {
   private onDrag(event: SortableEvent) {
     this.sortableState = 'dragging';
 
-    const key = event.node.getAttribute('data-key') as T;
+    const key = event.node.getAttribute('data-key') as any;
     const index = this.getIndex(key);
 
     // store the dragged item
@@ -186,7 +186,7 @@ class VirtualSortable<T> {
   private getEventProperties(evt: DropEvent<T>, event: SortableEvent) {
     const key = evt.key;
     const index = evt.oldIndex;
-    const targetKey = event.target.getAttribute('data-key') as T;
+    const targetKey = event.target.getAttribute('data-key') as any;
 
     let newIndex = -1;
     let oldIndex = index;
