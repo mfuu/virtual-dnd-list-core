@@ -88,13 +88,40 @@ export class Virtual<T> {
     this.scrollEl[offsetKey] = offset;
   }
 
-  public scrollToIndex(index: number) {
+  public scrollToIndex(index: number, align: 'top' | 'bottom' | 'auto' = 'top') {
     if (index >= this.options.uniqueKeys.length - 1) {
       this.scrollToBottom();
-    } else {
-      const indexOffset = this.getOffsetByRange(0, index);
-      const startOffset = this.getScrollStartOffset();
-      this.scrollToOffset(indexOffset + startOffset);
+      return;
+    }
+
+    if (index < 0) {
+      this.scrollToOffset(0);
+      return;
+    }
+
+    const offset = this.getOffset();
+    const clientSize = this.getClientSize();
+
+    // calc item position
+    const itemSize = this.getSize(this.options.uniqueKeys[index]);
+    const itemTop = this.getOffsetByRange(0, index) + this.getScrollStartOffset();
+    const itemBottom = itemTop + itemSize;
+    const viewportTop = offset;
+    const viewportBottom = offset + clientSize;
+
+    if (align === 'auto') {
+      if (itemTop >= viewportTop && itemBottom <= viewportBottom) {
+        return;
+      }
+
+      align = itemTop < viewportTop ? 'top' : 'bottom';
+    }
+
+    if (align === 'top') {
+      this.scrollToOffset(itemTop);
+    } else if (align === 'bottom') {
+      const targetOffset = Math.max(0, itemBottom - clientSize);
+      this.scrollToOffset(targetOffset);
     }
   }
 
@@ -104,10 +131,7 @@ export class Virtual<T> {
 
     // if the bottom is not reached, execute the scroll method again
     setTimeout(() => {
-      const clientSize = this.getClientSize();
-      const scrollSize = this.getScrollSize();
-      const scrollOffset = this.getOffset();
-      if (scrollOffset + clientSize + 1 < scrollSize) {
+      if (this.getOffset() + this.getClientSize() + 1 < this.getScrollSize()) {
         this.scrollToBottom();
       }
     }, 5);
