@@ -27,6 +27,7 @@ const SortableAttrs = [
   'chosenClass',
   'scrollSpeed',
   'appendToBody',
+  'ghostContainer',
   'scrollThreshold',
   'delayOnTouchOnly',
   'placeholderClass',

@@ -22,6 +22,7 @@ let sortable = new VirtualSortable(elem, {
   dropOnAnimationEnd: true,
   ghostClass: '',
   ghostStyle: {},
+  ghostContainer: null,
   chosenClass: '',
   placeholderClass: '',
 

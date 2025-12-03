@@ -1,4 +1,4 @@
-import { Group, ScrollSpeed, SortableEvent } from 'sortable-dnd';
+import Sortable, { EventType, Group, ScrollSpeed, SortableEvent } from 'sortable-dnd';
 
 export type Func = (...args: any[]) => any;
 
@@ -63,7 +63,7 @@ export interface DropEvent<T> {
 export interface SortableOptions<T> {
   delay?: number;
   group?: string | Group;
-  handle?: string;
+  handle?: string | ((event: EventType) => boolean);
   lockAxis?: 'x' | 'y';
   disabled?: boolean;
   sortable?: boolean;
@@ -72,6 +72,7 @@ export interface SortableOptions<T> {
   autoScroll?: boolean;
   scrollSpeed?: ScrollSpeed;
   appendToBody?: boolean;
+  ghostContainer?: HTMLElement | ((sortable: Sortable) => HTMLElement);
   scrollThreshold?: number;
   delayOnTouchOnly?: boolean;
   dropOnAnimationEnd?: boolean;
