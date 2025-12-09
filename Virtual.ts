@@ -131,10 +131,14 @@ export class Virtual<T> {
 
     // if the bottom is not reached, execute the scroll method again
     setTimeout(() => {
-      if (this.getOffset() + this.getClientSize() + 1 < this.getScrollSize()) {
+      if (!this.isReachedBottom()) {
         this.scrollToBottom();
       }
     }, 5);
+  }
+
+  public isReachedBottom() {
+    return this.getOffset() + this.getClientSize() + 1 >= this.getScrollSize();
   }
 
   public option<K extends keyof VirtualOptions<T>>(key: K, value: VirtualOptions<T>[K]) {
