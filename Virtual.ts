@@ -1,6 +1,6 @@
 import Sortable from 'sortable-dnd';
 import { debounce, throttle, elementIsDocumentOrWindow } from './utils';
-import { DIRECTION, Range, SIZETYPE, VirtualOptions } from './types';
+import type { DIRECTION, Range, SIZETYPE, VirtualOptions } from './types';
 
 export class Virtual<T> {
   public sizes: Map<T, number>;

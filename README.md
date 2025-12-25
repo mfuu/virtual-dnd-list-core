@@ -5,7 +5,7 @@
 ```js
 import { VirtualSortable } from './index';
 
-let sortable = new VirtualSortable(elem, {
+let vs = new VirtualSortable(elem, {
   delay: 0,
   group: '',
   handle: '',

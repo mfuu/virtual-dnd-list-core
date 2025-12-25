@@ -1,4 +1,4 @@
-import Sortable, { SortableOptions as DndOptions, SortableEvent } from 'sortable-dnd';
+import Sortable, { type SortableOptions as DndOptions, type SortableEvent } from 'sortable-dnd';
 import type {
   DropEvent,
   MethodNames,

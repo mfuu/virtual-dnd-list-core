@@ -1,4 +1,9 @@
-import Sortable, { EventType, Group, ScrollSpeed, SortableEvent } from 'sortable-dnd';
+import Sortable, {
+  type EventType,
+  type Group,
+  type ScrollSpeed,
+  type SortableEvent,
+} from 'sortable-dnd';
 
 export type Func = (...args: any[]) => any;
 
@@ -77,7 +82,7 @@ export interface SortableOptions<T> {
   delayOnTouchOnly?: boolean;
   dropOnAnimationEnd?: boolean;
   ghostClass?: string;
-  ghostStyle?: object;
+  ghostStyle?: Partial<CSSStyleDeclaration>;
   chosenClass?: string;
   placeholderClass?: string;
   onDrag?: (event: DragEvent<T>) => void;

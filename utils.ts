@@ -1,4 +1,4 @@
-import { Func } from './types';
+import type { Func } from './types';
 
 export function throttle(fn: Func, wait: number) {
   let timer: NodeJS.Timeout | null;
