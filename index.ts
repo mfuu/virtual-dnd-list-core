@@ -39,7 +39,6 @@ const VirtualAttrs = [
   'keeps',
   'scroller',
   'direction',
-  'uniqueKeys',
   'debounceTime',
   'throttleTime',
 ];
