@@ -37,6 +37,7 @@ const SortableAttrs = [
 const VirtualAttrs = [
   'size',
   'keeps',
+  'buffer',
   'scroller',
   'direction',
   'debounceTime',
@@ -99,11 +100,10 @@ class VirtualSortable<T> {
     const props = VirtualAttrs.reduce((res, key) => {
       res[key] = this.options[key];
       return res;
-    }, {});
+    }, {} as VirtualOptions<T>);
 
     this.virtual = new Virtual({
       ...props,
-      buffer: this.options.buffer,
       wrapper: this.options.wrapper,
       scroller: this.options.scroller,
       uniqueKeys: this.options.uniqueKeys,

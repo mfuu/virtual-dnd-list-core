@@ -6,6 +6,7 @@ export class Virtual<T> {
   public sizes: Map<T, number>;
   public range: Range;
   public offset: number;
+  public buffer: number;
   public options: VirtualOptions<T>;
   public scrollEl: HTMLElement;
   public direction: DIRECTION;
@@ -33,6 +34,8 @@ export class Virtual<T> {
       !(name in this.options) && (this.options[name] = defaults[name]);
     }
 
+    this.option('buffer', options.buffer);
+
     this.sizes = new Map(); // store item size
     this.sizeType = 'INIT';
     this.fixedSize = 0;
@@ -45,7 +48,7 @@ export class Virtual<T> {
     this.updateScrollElement();
     this.updateOnScrollFunction();
     this.addScrollEventListener();
-    this.checkIfUpdate(0, options.keeps! - 1);
+    this.checkIfUpdate(0, options.keeps - 1);
   }
 
   public isFixed() {
@@ -145,6 +148,14 @@ export class Virtual<T> {
     const oldValue = this.options[key];
 
     this.options[key] = value;
+
+    if (key === 'buffer') {
+      if (value === undefined || value === null) {
+        this.buffer = Math.round(this.options.keeps / 3);
+      } else {
+        this.buffer = value as number;
+      }
+    }
 
     if (key === 'uniqueKeys') {
       this.sizes.forEach((_v, k) => {
@@ -289,13 +300,13 @@ export class Virtual<T> {
       return;
     }
 
-    const start = Math.max(scrolls - this.options.buffer, 0);
+    const start = Math.max(scrolls - this.buffer, 0);
     this.checkIfUpdate(start, this.getEndByStart(start));
   }
 
   private handleScrollBehind() {
     const scrolls = this.getScrollItems();
-    if (scrolls < this.range.start + this.options.buffer) {
+    if (scrolls < this.range.start + this.buffer) {
       return;
     }
 
@@ -335,7 +346,7 @@ export class Virtual<T> {
   }
 
   private checkIfUpdate(start: number, end: number) {
-    const keeps = this.options.keeps!;
+    const keeps = this.options.keeps;
     const total = this.options.uniqueKeys.length;
 
     if (total <= keeps) {
@@ -394,12 +405,12 @@ export class Virtual<T> {
   }
 
   private getEndByStart(start: number) {
-    return Math.min(start + this.options.keeps! - 1, this.getLastIndex());
+    return Math.min(start + this.options.keeps - 1, this.getLastIndex());
   }
 
   private getLastIndex() {
     const { uniqueKeys, keeps } = this.options;
-    return uniqueKeys.length > 0 ? uniqueKeys.length - 1 : keeps! - 1;
+    return uniqueKeys.length > 0 ? uniqueKeys.length - 1 : keeps - 1;
   }
 
   private getItemSize() {

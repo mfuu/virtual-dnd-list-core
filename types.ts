@@ -39,8 +39,8 @@ export interface ScrollEvent {
 
 export interface VirtualOptions<T> {
   size?: number;
-  keeps?: number;
-  buffer: number;
+  keeps: number;
+  buffer?: number;
   wrapper: HTMLElement;
   scroller: HTMLElement | Document | Window;
   direction?: 'vertical' | 'horizontal';
