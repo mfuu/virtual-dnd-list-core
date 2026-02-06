@@ -69,7 +69,7 @@ class VirtualSortable<T> {
   public option<K extends keyof Options<T>>(key: K, value: Options<T>[K]) {
     this.options[key] = value;
 
-    if (VirtualAttrs.includes(key)) {
+    if (VirtualAttrs.includes(key) || key === 'uniqueKeys') {
       this.virtual.option(key as keyof VirtualOptions<T>, value as any);
     }
 
@@ -105,7 +105,6 @@ class VirtualSortable<T> {
     this.virtual = new Virtual({
       ...props,
       wrapper: this.options.wrapper,
-      scroller: this.options.scroller,
       uniqueKeys: this.options.uniqueKeys,
       onScroll: (event: ScrollEvent) => this.onScroll(event),
       onUpdate: (range: Range, changed: boolean) => this.onUpdate(range, changed),
